@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
 	ArrowDownToLine,
 	Box,
@@ -7,13 +7,16 @@ import {
 	MessageCircle,
 	Route,
 	Send,
+	ShieldCheck,
 	UserCog,
 	Users,
 } from 'lucide-react';
+import { can as canByRole, roleLabel, type Capability } from '../../auth/roles';
 import { getStore } from '../../data/store';
 import { schemas } from '../../data/schemas';
 import { useAuth } from '../../hooks/useAuth';
 import { useCollections } from '../../hooks/useCollections';
+import { useRoles } from '../../hooks/useRoles';
 import { useI18n, LocaleProvider } from '../../i18n/LocaleProvider';
 import { generateMock } from '../../lib/mock';
 import { ThemeProvider } from '../../lib/theme';
@@ -26,6 +29,7 @@ import { KittPanel } from './KittPanel';
 import { LoginScreen } from './LoginScreen';
 import { MessagingView } from './MessagingView';
 import { MobileNav } from './MobileNav';
+import { RolesView } from './RolesView';
 import { Sidebar, type NavItem } from './Sidebar';
 import { ToastProvider } from './Toast';
 
@@ -53,11 +57,14 @@ function DashboardShell({ session, signIn, signOut }: DashboardShellProps) {
 	const { S } = useI18n();
 	const store = getStore();
 	const collections = useCollections(true);
+	const { roles } = useRoles();
 	const [view, setView] = useState<ViewKey>('dashboard');
 	const [mobileOpen, setMobileOpen] = useState(false);
 	const [sidebarCollapsed, setSidebarCollapsed] = useState(
 		() => localStorage.getItem('whm.sidebar.collapsed') === '1',
 	);
+
+	const can = (cap: Capability) => (session ? canByRole(session.roleId, cap, roles) : false);
 
 	const navItems: NavItem[] = [
 		{ key: 'dashboard', label: S.dashboard, icon: LayoutDashboard },
@@ -69,10 +76,24 @@ function DashboardShell({ session, signIn, signOut }: DashboardShellProps) {
 		{ key: 'messaging', label: S.messaging, icon: MessageCircle },
 		{ key: 'crm', label: S.crm, icon: Users },
 		{ key: 'users', label: S.users, icon: UserCog },
+		{ key: 'roles', label: S.rolesTitle, icon: ShieldCheck },
 	];
 
+	const visibleItems = navItems.filter((item) => {
+		if (item.key === 'roles') return can('manage:roles');
+		const cap =
+			item.key === 'dashboard'
+				? 'view:dashboard'
+				: item.key === 'picking'
+					? 'view:picking'
+					: item.key === 'messaging'
+						? 'view:messaging'
+						: (`view:${item.key}` as Capability);
+		return can(cap);
+	});
+
 	const DOCK_KEYS: ViewKey[] = ['dashboard', 'inventory', 'picking', 'messaging'];
-	const dockItems = navItems.filter((item) => DOCK_KEYS.includes(item.key));
+	const dockItems = visibleItems.filter((item) => DOCK_KEYS.includes(item.key));
 
 	const viewTitles: Record<ViewKey, string> = {
 		dashboard: S.dashboard,
@@ -84,22 +105,43 @@ function DashboardShell({ session, signIn, signOut }: DashboardShellProps) {
 		messaging: S.messaging,
 		crm: S.crm,
 		users: S.users,
+		roles: S.rolesTitle,
 	};
+
+	useEffect(() => {
+		if (!session) return;
+		const cap: Capability =
+			view === 'roles'
+				? 'manage:roles'
+				: view === 'dashboard'
+					? 'view:dashboard'
+					: view === 'picking'
+						? 'view:picking'
+						: view === 'messaging'
+							? 'view:messaging'
+							: (`view:${view}` as Capability);
+		if (!canByRole(session.roleId, cap, roles)) setView('dashboard');
+	}, [view, session, roles]);
 
 	if (!session) {
 		return (
 			<LoginScreen
 				operators={collections.users.docs}
+				roles={roles}
 				loading={collections.users.loading}
 				onSelect={signIn}
 			/>
 		);
 	}
 
-	const isCrud = view !== 'dashboard' && view !== 'picking' && view !== 'messaging';
+	const isCrud =
+		view !== 'dashboard' && view !== 'picking' && view !== 'messaging' && view !== 'roles';
 	const crudKey = (isCrud ? view : null) as CollectionKey | null;
 
-	const canInjectMock = crudKey !== null && collections[crudKey].docs.length < MOCK_LIMIT;
+	const canInjectMock =
+		crudKey !== null &&
+		collections[crudKey].docs.length < MOCK_LIMIT &&
+		can('dev:mock');
 
 	const navigate = (next: ViewKey) => {
 		setView(next);
@@ -120,7 +162,7 @@ function DashboardShell({ session, signIn, signOut }: DashboardShellProps) {
 	return (
 		<div className="flex h-screen overflow-hidden bg-slate-100 font-sans text-gray-900 dark:bg-slate-950 dark:text-gray-100">
 			<Sidebar
-				items={navItems}
+				items={visibleItems}
 				active={view}
 				onNavigate={navigate}
 				open={mobileOpen}
@@ -131,13 +173,14 @@ function DashboardShell({ session, signIn, signOut }: DashboardShellProps) {
 			<main className="flex h-full flex-1 flex-col overflow-hidden">
 				<Header
 					session={session}
+					roleLabel={roleLabel(session.roleId, roles)}
 					onToggleSidebar={toggleSidebar}
 					sidebarCollapsed={sidebarCollapsed}
 					onSignOut={signOut}
 				/>
 
 				<div className="flex-1 overflow-y-auto p-4 pb-24 md:p-8 md:pb-8">
-					{view === 'dashboard' && <DashboardView collections={collections} />}
+					{view === 'dashboard' && <DashboardView collections={collections} canAi={can('ai')} />}
 					{view === 'picking' && (
 						<AdvancedPickingView
 							outOrders={collections.outOrders.docs}
@@ -145,6 +188,7 @@ function DashboardShell({ session, signIn, signOut }: DashboardShellProps) {
 						/>
 					)}
 					{view === 'messaging' && <MessagingView />}
+					{view === 'roles' && <RolesView roles={roles} users={collections.users.docs} />}
 					{crudKey && (
 						<CrudView
 							entity={crudKey}
@@ -155,11 +199,13 @@ function DashboardShell({ session, signIn, signOut }: DashboardShellProps) {
 							fields={schemas[crudKey]}
 							canInjectMock={canInjectMock}
 							onInjectMock={injectMock}
+							canEdit={can(`edit:${crudKey}` as Capability)}
+							canDelete={can(`edit:${crudKey}` as Capability)}
 						/>
 					)}
 				</div>
 
-				<KittPanel collections={collections} />
+				{can('kitt') && <KittPanel collections={collections} />}
 			</main>
 
 			<MobileNav

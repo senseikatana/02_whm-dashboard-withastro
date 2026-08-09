@@ -49,10 +49,13 @@ const CRM: SeedRow[] = [
 ];
 
 const USERS: SeedRow[] = [
-	{ code: 'OP-1001', name: 'Martín Ruiz', role: 'Admin', status: 'Activo' },
-	{ code: 'OP-1002', name: 'Valentina Díaz', role: 'Manager', status: 'Activo' },
-	{ code: 'OP-1003', name: 'Santiago López', role: 'Picker', status: 'Activo' },
-	{ code: 'OP-1004', name: 'Camila Torres', role: 'Picker', status: 'Inactivo' },
+	{ code: 'OP-1001', name: 'Martín Ruiz', role: 'admin', status: 'Activo' },
+	{ code: 'OP-1002', name: 'Valentina Díaz', role: 'manager', status: 'Activo' },
+	{ code: 'OP-1003', name: 'Santiago López', role: 'picker', status: 'Activo' },
+	{ code: 'OP-1004', name: 'Camila Torres', role: 'picker', status: 'Inactivo' },
+	{ code: 'OP-1005', name: 'Lucía Fernández', role: 'formador', status: 'Activo' },
+	{ code: 'OP-1006', name: 'Prácticas Novatecnica 1', role: 'practicas', status: 'Activo' },
+	{ code: 'OP-1007', name: 'Prácticas Novatecnica 2', role: 'practicas', status: 'Activo' },
 ];
 
 export const seedData: Record<CollectionKey, readonly SeedRow[]> = {

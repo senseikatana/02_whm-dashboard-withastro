@@ -1,5 +1,5 @@
 const DB_NAME = 'whm-db';
-const DB_VERSION = 2;
+const DB_VERSION = 3;
 
 let dbPromise: Promise<IDBDatabase> | null = null;
 
@@ -16,6 +16,9 @@ function openDb(): Promise<IDBDatabase> {
 			}
 			if (!db.objectStoreNames.contains('kitt-files')) {
 				db.createObjectStore('kitt-files');
+			}
+			if (!db.objectStoreNames.contains('roles')) {
+				db.createObjectStore('roles');
 			}
 		};
 		request.onsuccess = () => resolve(request.result);

@@ -4,6 +4,8 @@ import { seedData } from './seed';
 import type { AppStore } from './store';
 
 const COLLECTION_STORE = 'collections';
+const SEED_VERSION = '2';
+const SEED_VERSION_KEY = 'whm.seed.version';
 
 type Listener = (docs: Doc[]) => void;
 
@@ -45,6 +47,24 @@ class LocalStore implements AppStore {
 				void this.reload(event.data?.col);
 			};
 		}
+
+		if (localStorage.getItem(SEED_VERSION_KEY) !== SEED_VERSION) {
+			await this.mergeSeedUsers();
+			localStorage.setItem(SEED_VERSION_KEY, SEED_VERSION);
+		}
+	}
+
+	private async mergeSeedUsers(): Promise<void> {
+		const col = 'users';
+		const existing = (await idbGet<Doc[]>(COLLECTION_STORE, col)) ?? [];
+		const existingCodes = new Set(existing.map((doc) => doc.code));
+		const missing = seedData[col].filter((row) => !existingCodes.has(String(row.code)));
+		if (missing.length === 0) return;
+		const rows = missing.map((row) => ({ id: this.newId(), ...row, createdAt: Date.now() }));
+		const merged = [...existing, ...rows];
+		await idbSet(COLLECTION_STORE, col, merged);
+		this.cache.set(col, merged);
+		this.notify(col);
 	}
 
 	private newId(): string {

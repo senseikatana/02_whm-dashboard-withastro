@@ -13,7 +13,13 @@ import { ai } from '../../lib/ai';
 import { KpiCard } from './KpiCard';
 import { useToast } from './Toast';
 
-export function DashboardView({ collections }: { collections: CollectionsState }) {
+export function DashboardView({
+	collections,
+	canAi,
+}: {
+	collections: CollectionsState;
+	canAi: boolean;
+}) {
 	const { S } = useI18n();
 	const toast = useToast();
 	const [report, setReport] = useState<string | null>(null);
@@ -56,26 +62,28 @@ export function DashboardView({ collections }: { collections: CollectionsState }
 				/>
 			</div>
 
-			<div className="relative overflow-hidden rounded-2xl bg-indigo-900 p-6 text-white">
-				<div className="absolute -right-8 -top-8 h-40 w-40 rounded-full bg-indigo-500/30 blur-2xl" aria-hidden="true" />
-				<h3 className="mb-4 flex items-center text-xl font-bold">
-					<Sparkles className="mr-2 text-yellow-400" />
-					{S.aiReportTitle}
-				</h3>
-				<button
-					type="button"
-					onClick={generateReport}
-					disabled={generating || !ai.isConfigured()}
-					className="rounded-lg bg-white/20 px-4 py-2 text-sm font-semibold transition hover:bg-white/30 disabled:opacity-50"
-				>
-					{generating && <Loader2 size={16} className="mr-2 inline animate-spin" />}
-					{generating ? S.aiGenerating : S.aiReportGenerate}
-				</button>
-				{!ai.isConfigured() && <p className="mt-3 text-sm text-indigo-200">{S.aiReportHint}</p>}
-				{report && (
-					<p className="mt-4 rounded-lg bg-black/20 p-4 text-sm leading-relaxed">{report}</p>
-				)}
-			</div>
+			{canAi && (
+				<div className="relative overflow-hidden rounded-2xl bg-indigo-900 p-6 text-white">
+					<div className="absolute -right-8 -top-8 h-40 w-40 rounded-full bg-indigo-500/30 blur-2xl" aria-hidden="true" />
+					<h3 className="mb-4 flex items-center text-xl font-bold">
+						<Sparkles className="mr-2 text-yellow-400" />
+						{S.aiReportTitle}
+					</h3>
+					<button
+						type="button"
+						onClick={generateReport}
+						disabled={generating || !ai.isConfigured()}
+						className="rounded-lg bg-white/20 px-4 py-2 text-sm font-semibold transition hover:bg-white/30 disabled:opacity-50"
+					>
+						{generating && <Loader2 size={16} className="mr-2 inline animate-spin" />}
+						{generating ? S.aiGenerating : S.aiReportGenerate}
+					</button>
+					{!ai.isConfigured() && <p className="mt-3 text-sm text-indigo-200">{S.aiReportHint}</p>}
+					{report && (
+						<p className="mt-4 rounded-lg bg-black/20 p-4 text-sm leading-relaxed">{report}</p>
+					)}
+				</div>
+			)}
 		</div>
 	);
 }

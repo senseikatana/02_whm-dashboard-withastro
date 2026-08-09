@@ -37,6 +37,8 @@ interface CrudViewProps {
 	fields: readonly FieldDef[];
 	canInjectMock: boolean;
 	onInjectMock: (entity: CollectionKey, count: number) => Promise<void>;
+	canEdit: boolean;
+	canDelete: boolean;
 }
 
 type ConfirmState = { mode: 'single' | 'batch'; docId?: string };
@@ -55,6 +57,8 @@ export function CrudView({
 	fields,
 	canInjectMock,
 	onInjectMock,
+	canEdit,
+	canDelete,
 }: CrudViewProps) {
 	const { S } = useI18n();
 	const toast = useToast();
@@ -409,14 +413,16 @@ export function CrudView({
 						)}
 						{S.generateMock}
 					</button>
-					<button
-						type="button"
-						onClick={openCreate}
-						className="flex items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-indigo-700"
-					>
-						<Plus size={15} />
-						{S.add}
-					</button>
+					{canEdit && (
+						<button
+							type="button"
+							onClick={openCreate}
+							className="flex items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-indigo-700"
+						>
+							<Plus size={15} />
+							{S.add}
+						</button>
+					)}
 				</div>
 			</div>
 
@@ -464,39 +470,45 @@ export function CrudView({
 							<div className="card-body gap-2 p-4">
 								<div className="flex items-center justify-between gap-2">
 									<div className="flex min-w-0 items-center gap-2">
-										<button
-											type="button"
-											onClick={() => toggleOne(doc.id)}
-											aria-label={S.selectedRecords}
-											className="shrink-0 text-gray-400 transition hover:text-indigo-600"
-										>
-											{selected.includes(doc.id) ? (
-												<CheckSquare size={18} className="text-indigo-600" />
-											) : (
-												<Square size={18} />
-											)}
-										</button>
+										{canDelete && (
+											<button
+												type="button"
+												onClick={() => toggleOne(doc.id)}
+												aria-label={S.selectedRecords}
+												className="shrink-0 text-gray-400 transition hover:text-indigo-600"
+											>
+												{selected.includes(doc.id) ? (
+													<CheckSquare size={18} className="text-indigo-600" />
+												) : (
+													<Square size={18} />
+												)}
+											</button>
+										)}
 										<span className="truncate font-bold text-gray-900 dark:text-white">
 											{String(doc[fields[0].key] ?? '')}
 										</span>
 									</div>
 									<div className="flex shrink-0 items-center">
-										<button
-											type="button"
-											onClick={() => openEdit(doc)}
-											aria-label={S.edit}
-											className="rounded p-1.5 text-gray-400 transition hover:bg-gray-100 hover:text-indigo-600 dark:hover:bg-slate-800"
-										>
-											<Edit size={16} />
-										</button>
-										<button
-											type="button"
-											onClick={() => setConfirm({ mode: 'single', docId: doc.id })}
-											aria-label={S.delete}
-											className="rounded p-1.5 text-gray-400 transition hover:bg-rose-50 hover:text-rose-600 dark:hover:bg-rose-950/40"
-										>
-											<Trash2 size={16} />
-										</button>
+										{canEdit && (
+											<button
+												type="button"
+												onClick={() => openEdit(doc)}
+												aria-label={S.edit}
+												className="rounded p-1.5 text-gray-400 transition hover:bg-gray-100 hover:text-indigo-600 dark:hover:bg-slate-800"
+											>
+												<Edit size={16} />
+											</button>
+										)}
+										{canDelete && (
+											<button
+												type="button"
+												onClick={() => setConfirm({ mode: 'single', docId: doc.id })}
+												aria-label={S.delete}
+												className="rounded p-1.5 text-gray-400 transition hover:bg-rose-50 hover:text-rose-600 dark:hover:bg-rose-950/40"
+											>
+												<Trash2 size={16} />
+											</button>
+										)}
 									</div>
 								</div>
 								{fields.length > 1 && (
@@ -533,20 +545,22 @@ export function CrudView({
 				<table className="w-full border-collapse text-left">
 						<thead>
 							<tr className="border-b border-gray-200 bg-gray-50/80 dark:border-slate-800 dark:bg-slate-800/50">
-								<th className="w-12 px-4 py-3 text-center">
-									<button
-										type="button"
-										onClick={toggleAll}
-										aria-label={S.selectedRecords}
-										className="text-gray-400 transition hover:text-indigo-600"
-									>
-										{selectedAll ? (
-											<CheckSquare size={18} className="text-indigo-600" />
-										) : (
-											<Square size={18} />
-										)}
-									</button>
-								</th>
+								{canDelete && (
+									<th className="w-12 px-4 py-3 text-center">
+										<button
+											type="button"
+											onClick={toggleAll}
+											aria-label={S.selectedRecords}
+											className="text-gray-400 transition hover:text-indigo-600"
+										>
+											{selectedAll ? (
+												<CheckSquare size={18} className="text-indigo-600" />
+											) : (
+												<Square size={18} />
+											)}
+										</button>
+									</th>
+								)}
 							{fields.map((field) => (
 								<th
 									key={field.key}
@@ -564,9 +578,11 @@ export function CrudView({
 									</button>
 								</th>
 							))}
+							{(canEdit || canDelete) && (
 								<th className="px-4 py-3 text-right text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-slate-400">
 									{S.actions}
 								</th>
+							)}
 							</tr>
 						</thead>
 					<tbody>
@@ -577,20 +593,22 @@ export function CrudView({
 										selected.includes(doc.id) ? 'bg-indigo-50/50 dark:bg-indigo-950/40' : ''
 									}`}
 								>
-									<td className="px-4 py-3 text-center">
-										<button
-											type="button"
-											onClick={() => toggleOne(doc.id)}
-											aria-label={S.selectedRecords}
-											className="text-gray-400 transition hover:text-indigo-600"
-										>
-											{selected.includes(doc.id) ? (
-												<CheckSquare size={18} className="text-indigo-600" />
-											) : (
-												<Square size={18} />
-											)}
-										</button>
-									</td>
+									{canDelete && (
+										<td className="px-4 py-3 text-center">
+											<button
+												type="button"
+												onClick={() => toggleOne(doc.id)}
+												aria-label={S.selectedRecords}
+												className="text-gray-400 transition hover:text-indigo-600"
+											>
+												{selected.includes(doc.id) ? (
+													<CheckSquare size={18} className="text-indigo-600" />
+												) : (
+													<Square size={18} />
+												)}
+											</button>
+										</td>
+									)}
 									{fields.map((field) => {
 										const value = doc[field.key];
 										return (
@@ -606,24 +624,30 @@ export function CrudView({
 											</td>
 										);
 									})}
-									<td className="whitespace-nowrap px-4 py-3 text-right">
-										<button
-											type="button"
-											onClick={() => openEdit(doc)}
-											aria-label={S.edit}
-											className="mr-2 rounded p-1.5 text-gray-400 transition hover:bg-gray-100 hover:text-indigo-600 dark:hover:bg-slate-800"
-										>
-											<Edit size={16} />
-										</button>
-										<button
-											type="button"
-											onClick={() => setConfirm({ mode: 'single', docId: doc.id })}
-											aria-label={S.delete}
-											className="rounded p-1.5 text-gray-400 transition hover:bg-rose-50 hover:text-rose-600 dark:hover:bg-rose-950/40"
-										>
-											<Trash2 size={16} />
-										</button>
-									</td>
+									{(canEdit || canDelete) && (
+										<td className="whitespace-nowrap px-4 py-3 text-right">
+											{canEdit && (
+												<button
+													type="button"
+													onClick={() => openEdit(doc)}
+													aria-label={S.edit}
+													className="mr-2 rounded p-1.5 text-gray-400 transition hover:bg-gray-100 hover:text-indigo-600 dark:hover:bg-slate-800"
+												>
+													<Edit size={16} />
+												</button>
+											)}
+											{canDelete && (
+												<button
+													type="button"
+													onClick={() => setConfirm({ mode: 'single', docId: doc.id })}
+													aria-label={S.delete}
+													className="rounded p-1.5 text-gray-400 transition hover:bg-rose-50 hover:text-rose-600 dark:hover:bg-rose-950/40"
+												>
+													<Trash2 size={16} />
+												</button>
+											)}
+										</td>
+									)}
 								</tr>
 							))}
 						</tbody>

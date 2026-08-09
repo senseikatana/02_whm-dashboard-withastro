@@ -1,3 +1,4 @@
+import { resolveRoleId } from '../auth/roles';
 import type { Operator } from '../types';
 
 const OPERATOR_KEY = 'whm.operator';
@@ -5,14 +6,20 @@ const OPERATOR_KEY = 'whm.operator';
 export const DEFAULT_OPERATOR: Operator = {
 	uid: 'demo',
 	name: 'Demo',
-	role: 'Admin',
+	roleId: 'admin',
 };
 
 export const operatorStore = {
 	load(): Operator | null {
 		try {
 			const raw = localStorage.getItem(OPERATOR_KEY);
-			return raw ? (JSON.parse(raw) as Operator) : null;
+			if (!raw) return null;
+			const parsed = JSON.parse(raw) as Partial<Operator> & { role?: string };
+			return {
+				uid: String(parsed.uid ?? DEFAULT_OPERATOR.uid),
+				name: String(parsed.name ?? DEFAULT_OPERATOR.name),
+				roleId: resolveRoleId(parsed.roleId ?? parsed.role),
+			};
 		} catch {
 			return null;
 		}

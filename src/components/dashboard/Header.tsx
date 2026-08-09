@@ -6,12 +6,13 @@ import { LanguageSelect } from './LanguageSelect';
 
 interface HeaderProps {
 	session: Session;
+	roleLabel: string;
 	onToggleSidebar: () => void;
 	sidebarCollapsed: boolean;
 	onSignOut: () => void;
 }
 
-export function Header({ session, onToggleSidebar, sidebarCollapsed, onSignOut }: HeaderProps) {
+export function Header({ session, roleLabel, onToggleSidebar, sidebarCollapsed, onSignOut }: HeaderProps) {
 	const { theme, toggleTheme } = useTheme();
 	const { S } = useI18n();
 
@@ -46,7 +47,7 @@ export function Header({ session, onToggleSidebar, sidebarCollapsed, onSignOut }
 				</button>
 				<div className="hidden text-right leading-tight sm:block">
 					<p className="text-sm font-bold text-gray-900 dark:text-white">{session.name}</p>
-					<p className="text-xs text-gray-500 dark:text-slate-400">{session.role}</p>
+					<p className="text-xs text-gray-500 dark:text-slate-400">{roleLabel}</p>
 				</div>
 				<button
 					type="button"

@@ -1,17 +1,19 @@
 import { useState } from 'react';
 import { ArrowRight, Boxes, Loader2, ShieldCheck } from 'lucide-react';
+import { roleLabel, resolveRoleId, type RoleDef } from '../../auth/roles';
 import { useI18n } from '../../i18n/LocaleProvider';
 import type { Doc, Operator } from '../../types';
 
 interface LoginScreenProps {
 	operators: Doc[];
+	roles: RoleDef[];
 	loading: boolean;
 	onSelect: (operator: Operator) => void;
 }
 
 const DEMO_OPERATOR: Doc = { id: 'demo', name: 'Demo', role: 'Admin' };
 
-export function LoginScreen({ operators, loading, onSelect }: LoginScreenProps) {
+export function LoginScreen({ operators, roles, loading, onSelect }: LoginScreenProps) {
 	const { S } = useI18n();
 	const [selected, setSelected] = useState<string | null>(null);
 
@@ -23,7 +25,7 @@ export function LoginScreen({ operators, loading, onSelect }: LoginScreenProps) 
 		onSelect({
 			uid: chosen.id,
 			name: String(chosen.name ?? DEMO_OPERATOR.name),
-			role: String(chosen.role ?? DEMO_OPERATOR.role),
+			roleId: resolveRoleId(String(chosen.role ?? DEMO_OPERATOR.role)),
 		});
 	};
 
@@ -71,7 +73,7 @@ export function LoginScreen({ operators, loading, onSelect }: LoginScreenProps) 
 										{String(op.name)}
 									</span>
 									<span className="rounded-full bg-gray-100 px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-wide text-gray-600 dark:bg-slate-700 dark:text-slate-300">
-										{String(op.role)}
+										{roleLabel(String(op.role), roles)}
 									</span>
 								</button>
 							);

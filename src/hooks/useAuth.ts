@@ -20,7 +20,7 @@ export function useAuth(): UseAuthResult {
 
 	const signIn = useCallback((operator: Operator) => {
 		operatorStore.save(operator);
-		setSession({ uid: operator.uid, name: operator.name, role: operator.role });
+		setSession({ uid: operator.uid, name: operator.name, roleId: operator.roleId });
 		setStatus('ready');
 	}, []);
 

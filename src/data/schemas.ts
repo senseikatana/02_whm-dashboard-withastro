@@ -37,7 +37,7 @@ export const schemas: Record<CollectionKey, readonly FieldDef[]> = {
 	users: [
 		{ key: 'code', label: 'ID', type: 'text', required: true, auto: true, gen: 'code' },
 		{ key: 'name', label: 'Operario', type: 'text', required: true },
-		{ key: 'role', label: 'Rol', type: 'select', options: ['Admin', 'Manager', 'Picker'], required: true },
+		{ key: 'role', label: 'Rol', type: 'select', options: ['admin', 'manager', 'picker', 'formador', 'practicas'], required: true },
 		{ key: 'status', label: 'Estado', type: 'select', options: ['Activo', 'Inactivo'], required: true },
 	],
 };

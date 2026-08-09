@@ -9,7 +9,7 @@ export const COLLECTION_KEYS = [
 
 export type CollectionKey = (typeof COLLECTION_KEYS)[number];
 
-export type ViewKey = CollectionKey | 'dashboard' | 'picking' | 'messaging';
+export type ViewKey = CollectionKey | 'dashboard' | 'picking' | 'messaging' | 'roles';
 
 export type Doc = { id: string } & Record<string, unknown>;
 
@@ -18,7 +18,7 @@ export type StatusTone = 'green' | 'orange' | 'red' | 'gray';
 export interface Operator {
 	uid: string;
 	name: string;
-	role: string;
+	roleId: string;
 }
 
 export interface Session extends Operator {}
