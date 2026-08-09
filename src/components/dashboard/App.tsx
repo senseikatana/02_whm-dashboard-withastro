@@ -14,7 +14,7 @@ import {
 import { can as canByRole, roleLabel, type Capability } from '../../auth/roles';
 import { getStore } from '../../data/store';
 import { schemas } from '../../data/schemas';
-import { useAuth } from '../../hooks/useAuth';
+import { useAuth, type AuthMode, type RegisterInput } from '../../hooks/useAuth';
 import { useCollections } from '../../hooks/useCollections';
 import { useRoles } from '../../hooks/useRoles';
 import { useI18n, LocaleProvider } from '../../i18n/LocaleProvider';
@@ -49,11 +49,21 @@ function BootScreen() {
 
 interface DashboardShellProps {
 	session: Session | null;
+	authMode: AuthMode;
 	signIn: (operator: Operator) => void;
+	signInWithPassword: (email: string, password: string) => Promise<string | null>;
+	register: (input: RegisterInput) => Promise<{ error: string | null; needsConfirmation: boolean }>;
 	signOut: () => void;
 }
 
-function DashboardShell({ session, signIn, signOut }: DashboardShellProps) {
+function DashboardShell({
+	session,
+	authMode,
+	signIn,
+	signInWithPassword,
+	register,
+	signOut,
+}: DashboardShellProps) {
 	const { S } = useI18n();
 	const store = getStore();
 	const collections = useCollections(true);
@@ -129,7 +139,10 @@ function DashboardShell({ session, signIn, signOut }: DashboardShellProps) {
 				operators={collections.users.docs}
 				roles={roles}
 				loading={collections.users.loading}
+				authMode={authMode}
 				onSelect={signIn}
+				onSignInWithPassword={signInWithPassword}
+				onRegister={register}
 			/>
 		);
 	}
@@ -219,7 +232,7 @@ function DashboardShell({ session, signIn, signOut }: DashboardShellProps) {
 }
 
 export default function App() {
-	const { status, session, signIn, signOut } = useAuth();
+	const { status, authMode, session, signIn, signInWithPassword, register, signOut } = useAuth();
 
 	return (
 		<LocaleProvider>
@@ -228,7 +241,14 @@ export default function App() {
 					{status === 'loading' ? (
 						<BootScreen />
 					) : (
-						<DashboardShell session={session} signIn={signIn} signOut={signOut} />
+						<DashboardShell
+							session={session}
+							authMode={authMode}
+							signIn={signIn}
+							signInWithPassword={signInWithPassword}
+							register={register}
+							signOut={signOut}
+						/>
 					)}
 				</ToastProvider>
 			</ThemeProvider>

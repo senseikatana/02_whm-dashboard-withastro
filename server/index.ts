@@ -1,6 +1,7 @@
 import 'dotenv/config';
 import cors from 'cors';
 import express, { type NextFunction, type Request, type Response } from 'express';
+import { isAuthEnabled, requireAuth } from './auth';
 import { ensureSchema, insertMessage, listChats, listMessages, upsertChat } from './db';
 import { sseConnect } from './events';
 import { kittChat, kittConfigured, kittModel, kittProvider } from './kitt';
@@ -21,6 +22,7 @@ interface EndpointDoc {
 	path: string;
 	description: string;
 	params: string[];
+	auth: boolean;
 }
 
 const ENDPOINTS: EndpointDoc[] = [
@@ -29,90 +31,104 @@ const ENDPOINTS: EndpointDoc[] = [
 		path: '/api',
 		description: 'Manifest JSON con todos los endpoints disponibles.',
 		params: [],
+		auth: false,
 	},
 	{
 		method: 'GET',
 		path: '/api/health',
 		description: 'Liveness del server y estado de configuración de los canales.',
 		params: [],
+		auth: false,
 	},
 	{
 		method: 'GET',
 		path: '/api/events',
 		description: 'Hub de eventos en tiempo real (Server-Sent Events).',
 		params: [],
+		auth: true,
 	},
 	{
 		method: 'GET',
 		path: '/api/chats',
 		description: 'Lista las conversaciones, opcionalmente filtradas por canal.',
 		params: ['channel?'],
+		auth: true,
 	},
 	{
 		method: 'GET',
 		path: '/api/messages',
 		description: 'Lista los mensajes de un chat (polling incremental con afterId).',
 		params: ['chatId', 'afterId?'],
+		auth: true,
 	},
 	{
 		method: 'POST',
 		path: '/api/telegram/send',
 		description: 'Envía un mensaje por Telegram.',
 		params: ['chatId', 'text'],
+		auth: true,
 	},
 	{
 		method: 'GET',
 		path: '/api/telegram/status',
 		description: 'Indica si el bot de Telegram está configurado.',
 		params: [],
+		auth: true,
 	},
 	{
 		method: 'POST',
 		path: '/api/whatsapp/send',
 		description: 'Envía un mensaje por WhatsApp Cloud API.',
 		params: ['to', 'text'],
+		auth: true,
 	},
 	{
 		method: 'GET',
 		path: '/api/whatsapp/status',
 		description: 'Estado de WhatsApp Cloud API (phone_id incluido).',
 		params: [],
+		auth: true,
 	},
 	{
 		method: 'GET',
 		path: '/api/whatsapp/webhook',
 		description: 'Verificación del webhook de Meta (handshake).',
 		params: ['hub.mode', 'hub.verify_token', 'hub.challenge'],
+		auth: false,
 	},
 	{
 		method: 'POST',
 		path: '/api/whatsapp/webhook',
 		description: 'Webhook entrante de Meta con los mensajes de WhatsApp.',
 		params: [],
+		auth: false,
 	},
 	{
 		method: 'GET',
 		path: '/api/kitt/health',
 		description: 'Estado del proveedor de IA configurado para KITT.',
 		params: [],
+		auth: true,
 	},
 	{
 		method: 'POST',
 		path: '/api/kitt/chat',
 		description: 'Chat con KITT en streaming (SSE): messages, snapshot y files.',
 		params: ['messages', 'snapshot?', 'files?'],
+		auth: true,
 	},
 ];
 
 function landingHtml(): string {
 	const rows = ENDPOINTS.map(
 		(endpoint) => `
-			<tr>
-				<td><span class="method method-${endpoint.method.toLowerCase()}">${endpoint.method}</span></td>
-				<td><code>${endpoint.path}</code></td>
-				<td>${endpoint.description}</td>
-				<td>${endpoint.params.map((param) => `<code class="param">${param}</code>`).join(' ') || '<span class="muted">—</span>'}</td>
-			</tr>`,
+		<tr>
+			<td><span class="method method-${endpoint.method.toLowerCase()}">${endpoint.method}</span></td>
+			<td><code>${endpoint.path}</code></td>
+			<td>${endpoint.description}</td>
+			<td>${endpoint.params.map((param) => `<code class="param">${param}</code>`).join(' ') || '<span class="muted">—</span>'}</td>
+			<td>${endpoint.auth ? '<span class="method method-post">JWT</span>' : '<span class="muted">—</span>'}</td>
+		</tr>`,
 	).join('');
 
 	return `<!doctype html>
@@ -191,10 +207,11 @@ function landingHtml(): string {
 	<div class="code-url">http://localhost:8787</div>
 	<table>
 		<thead>
-			<tr><th>Método</th><th>Ruta</th><th>Descripción</th><th>Parámetros</th></tr>
+			<tr><th>Método</th><th>Ruta</th><th>Descripción</th><th>Parámetros</th><th>Auth</th></tr>
 		</thead>
 		<tbody>${rows}</tbody>
 	</table>
+	<p class="note">${isAuthEnabled() ? 'Auth JWT habilitado: las rutas marcadas con JWT exigen un token de Supabase (Authorization: Bearer ... o ?token=...).' : 'Auth JWT deshabilitado (modo local): ninguna ruta exige token.'}</p>
 	<div class="links">
 		<a href="/api">Manifest JSON → /api</a>
 		&nbsp;·&nbsp;
@@ -254,17 +271,18 @@ async function main(): Promise<void> {
 		});
 	});
 
-	app.get('/api/events', (req, res) => {
+	app.get('/api/events', requireAuth, (req, res) => {
 		res.socket?.setTimeout(0);
 		sseConnect(res);
 	});
 
-	app.get('/api/chats', async (req, res) => {
+	app.get('/api/chats', requireAuth, async (req, res) => {
 		res.json(await listChats(queryString(req.query.channel)));
 	});
 
 	app.get(
 		'/api/messages',
+		requireAuth,
 		wrap(async (req, res) => {
 			const chatId = queryString(req.query.chatId);
 			if (!chatId) {
@@ -278,6 +296,7 @@ async function main(): Promise<void> {
 
 	app.post(
 		'/api/telegram/send',
+		requireAuth,
 		wrap(async (req, res) => {
 			const chatId = queryString(req.body.chatId);
 			const text = queryString(req.body.text);
@@ -301,12 +320,13 @@ async function main(): Promise<void> {
 		}),
 	);
 
-	app.get('/api/telegram/status', (_req, res) => {
+	app.get('/api/telegram/status', requireAuth, (_req, res) => {
 		res.json({ configured: telegramConfigured() });
 	});
 
 	app.post(
 		'/api/whatsapp/send',
+		requireAuth,
 		wrap(async (req, res) => {
 			const to = queryString(req.body.to);
 			const text = queryString(req.body.text);
@@ -336,7 +356,7 @@ async function main(): Promise<void> {
 		}),
 	);
 
-	app.get('/api/whatsapp/status', (_req, res) => {
+	app.get('/api/whatsapp/status', requireAuth, (_req, res) => {
 		res.json({
 			configured: whatsappConfigured(),
 			phoneId: process.env.WHATSAPP_PHONE_ID ?? null,
@@ -360,7 +380,7 @@ async function main(): Promise<void> {
 		}),
 	);
 
-	app.get('/api/kitt/health', (_req, res) => {
+	app.get('/api/kitt/health', requireAuth, (_req, res) => {
 		res.json({
 			configured: kittConfigured(),
 			provider: kittProvider(),
@@ -370,6 +390,7 @@ async function main(): Promise<void> {
 
 	app.post(
 		'/api/kitt/chat',
+		requireAuth,
 		wrap(async (req, res) => {
 			await kittChat(res, req.body);
 		}),

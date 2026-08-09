@@ -25,6 +25,16 @@ Manage the background server with `astro dev stop`, `astro dev status`, and `ast
 - Users reference roles by id in the `role` field; `LoginScreen` maps them with `resolveRoleId()`. Seeded roles (`admin`, `manager`, `picker`, `formador`, `practicas`) are merged into an existing DB without deleting custom users.
 - `src/data/localStore.ts` uses `SEED_VERSION` (`whm.seed.version`) to run one-time seed merges when the seed data set changes; bump it to force a re-seed of missing rows.
 
+## Authentication (Supabase Auth)
+
+- `src/hooks/useAuth.ts` returns `authMode` (`supabase` | `demo`). Supabase mode activates when `PUBLIC_SUPABASE_URL` + `PUBLIC_SUPABASE_ANON_KEY` are present; otherwise the app falls back to local demo operators (IndexedDB).
+- `src/lib/supabase.ts` — browser client singleton, `getSessionToken()`, `signUp()` (registration with role in `user_metadata`), `fetchProfile()`.
+- Role resolution (`fetchProfile`) reads `user_metadata.name` / `user_metadata.role_id` FIRST, falling back to the `profiles` table when it exists. This means the app works with zero Postgres setup (registration + seed only need the REST API). Unknown role ids fall back to `picker`.
+- `LoginScreen` renders email/password with a "Sign up" toggle (email + password + name + role selector — ALL roles are selectable by design, including admin; privilege-escalation risk, OK for an internal panel). `signInWithPassword` reports errors via `invalidCredentials`; registration reports the raw Supabase error and `needsConfirmation` when the project has *Confirm email* enabled (session is null after signUp).
+- Messaging/Kitt clients attach the JWT automatically: `src/lib/messaging.ts` and `src/lib/kit.ts` send `Authorization: Bearer`; `useMessaging` passes the token to SSE as `?token=` (EventSource can't set headers).
+- `server/auth.ts` — Express middleware `requireAuth`. Enabled only when `SUPABASE_JWKS_URL` is set (validates against the project JWKS via `jose`); without it all routes stay open for local dev. Protected routes are listed with `auth: true` in `ENDPOINTS` in `server/index.ts`. The Meta webhook, `/api/health`, and the manifest `/api` stay public.
+- `scripts/seed-supabase.ts` (`bun run seed:supabase`) is REST-only: creates/updates users via the admin API writing `name`/`role_id` to `user_metadata`. Seeds the 5 role users (`<role_id>@warehouse.local`, password `Cambiame123!` / `SEED_USER_PASSWORD`) plus demo access `admin@admin.com` / `admin12345678` and `picker@demo.com` / `admin12345678` (all `email_confirm: true`). `profiles` sync to Postgres is optional and skipped with a warning if `DATABASE_URL` is missing/broken.
+
 ## Project structure
 
 - `src/` — Astro SPA (React island, Tailwind v4, IndexedDB stores).

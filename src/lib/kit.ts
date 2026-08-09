@@ -1,3 +1,5 @@
+import { getSessionToken } from './supabase';
+
 export interface KittMessage {
 	role: 'user' | 'assistant';
 	text: string;
@@ -21,7 +23,11 @@ const API_BASE: string = import.meta.env.PUBLIC_API_BASE ?? 'http://localhost:87
 
 export async function kittHealth(): Promise<KittHealth | null> {
 	try {
+		const token = await getSessionToken();
+		const headers: Record<string, string> = {};
+		if (token) headers.Authorization = `Bearer ${token}`;
 		const response = await fetch(`${API_BASE}/api/kitt/health`, {
+			headers,
 			signal: AbortSignal.timeout(2500),
 		});
 		if (!response.ok) return null;
@@ -35,9 +41,12 @@ export async function* kittStream(
 	messages: KittMessage[],
 	context: { snapshot: unknown; files: KittFile[] },
 ): AsyncGenerator<string> {
+	const token = await getSessionToken();
+	const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+	if (token) headers.Authorization = `Bearer ${token}`;
 	const response = await fetch(`${API_BASE}/api/kitt/chat`, {
 		method: 'POST',
-		headers: { 'Content-Type': 'application/json' },
+		headers,
 		body: JSON.stringify({
 			messages,
 			snapshot: context.snapshot,

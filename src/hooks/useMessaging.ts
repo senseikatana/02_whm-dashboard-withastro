@@ -8,6 +8,7 @@ import {
 	type ChatMessage,
 	type MessagingChannel,
 } from '../lib/messaging';
+import { getSessionToken } from '../lib/supabase';
 
 const MESSAGES_STORE = 'messages';
 const API_BASE: string = import.meta.env.PUBLIC_API_BASE ?? 'http://localhost:8787';
@@ -79,6 +80,7 @@ export function useMessaging(channel: MessagingChannel): UseMessagingResult {
 
 	useEffect(() => {
 		let disposed = false;
+		let source: EventSource | null = null;
 
 		const refreshChats = async () => {
 			try {
@@ -104,28 +106,37 @@ export function useMessaging(channel: MessagingChannel): UseMessagingResult {
 			}
 		};
 
-		const source = new EventSource(`${API_BASE}/api/events`);
-		source.onopen = () => {
-			if (!disposed) setBackendOnline(true);
+		const connect = async () => {
+			const token = await getSessionToken();
+			if (disposed) return;
+			const url = token
+				? `${API_BASE}/api/events?token=${encodeURIComponent(token)}`
+				: `${API_BASE}/api/events`;
+			const s = new EventSource(url);
+			source = s;
+			s.onopen = () => {
+				if (!disposed) setBackendOnline(true);
+			};
+			s.onerror = () => {
+				if (!disposed) setBackendOnline(false);
+			};
+			s.addEventListener('message', (event) => {
+				try {
+					applyIncoming(JSON.parse((event as MessageEvent<string>).data) as ChatMessage);
+				} catch {
+					/* evento malformado */
+				}
+			});
+			s.addEventListener('chat', (event) => {
+				try {
+					applyChat(JSON.parse((event as MessageEvent<string>).data) as Chat);
+				} catch {
+					/* evento malformado */
+				}
+			});
 		};
-		source.onerror = () => {
-			if (!disposed) setBackendOnline(false);
-		};
-		source.addEventListener('message', (event) => {
-			try {
-				applyIncoming(JSON.parse((event as MessageEvent<string>).data) as ChatMessage);
-			} catch {
-				/* evento malformado */
-			}
-		});
-		source.addEventListener('chat', (event) => {
-			try {
-				applyChat(JSON.parse((event as MessageEvent<string>).data) as Chat);
-			} catch {
-				/* evento malformado */
-			}
-		});
 
+		void connect();
 		void refreshHealth();
 		void refreshChats();
 		const poll = setInterval(() => {
@@ -134,7 +145,7 @@ export function useMessaging(channel: MessagingChannel): UseMessagingResult {
 
 		return () => {
 			disposed = true;
-			source.close();
+			source?.close();
 			clearInterval(poll);
 		};
 	}, [channel, applyIncoming, applyChat]);

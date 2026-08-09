@@ -25,3 +25,5 @@ server/data/
 
 # jetbrains setting folder
 .idea/
+
+/src/generated/prisma

@@ -1,3 +1,5 @@
+import { getSessionToken } from './supabase';
+
 export type MessagingChannel = 'whatsapp' | 'telegram';
 
 export interface ChatMessage {
@@ -28,10 +30,10 @@ export interface BackendStatus {
 const API_BASE: string = import.meta.env.PUBLIC_API_BASE ?? 'http://localhost:8787';
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
-	const response = await fetch(`${API_BASE}${path}`, {
-		headers: { 'Content-Type': 'application/json' },
-		...init,
-	});
+	const token = await getSessionToken();
+	const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+	if (token) headers.Authorization = `Bearer ${token}`;
+	const response = await fetch(`${API_BASE}${path}`, { headers, ...init });
 	const data = (await response.json().catch(() => ({}))) as { error?: string } & T;
 	if (!response.ok) {
 		throw new Error(data.error ?? `Error del servidor (${response.status}).`);

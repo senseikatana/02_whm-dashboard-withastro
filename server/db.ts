@@ -10,7 +10,7 @@ function defaultUrl(): string {
 	return `file:${dbPath}`;
 }
 
-const url = process.env.DATABASE_URL ?? defaultUrl();
+const url = process.env.LIBSQL_URL ?? defaultUrl();
 
 export const client = createClient({ url });
 
