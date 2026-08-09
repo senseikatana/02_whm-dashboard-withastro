@@ -4,8 +4,9 @@ Panel de operaciones de almacén (WMS) construido con **Astro + React** y estila
 
 ## Arquitectura
 
-- **Frontend (Astro + React)**: dashboard SPA con vista de inventario, picking, recepciones, expediciones, rutas, CRM y mensajería.
-- **Almacenamiento local**: los datos de negocio (colecciones CRUD) se guardan en **IndexedDB** nativa del navegador. Las preferencias pequeñas (operador, tema) viven en `localStorage`.
+- **Frontend (Astro + React)**: dashboard SPA con vista de inventario, picking, recepciones, expediciones, rutas, CRM, mensajería y administración de roles y permisos.
+- **Almacenamiento local**: los datos de negocio (colecciones CRUD) se guardan en **IndexedDB** nativa del navegador. Las preferencias pequeñas (operador, tema, roles personalizados) viven en `localStorage`.
+- **Roles y permisos**: modelo de capacidades en `src/auth/roles.ts`. Cada rol define qué vistas puede abrir y qué puede editar/borrar; los roles predeterminados se siembran y los personalizados se guardan en `localStorage` (`whm.roles`) desde la vista **Roles**.
 - **Backend de mensajería** (`server/`): **Express + Drizzle ORM + SQLite (libSQL)**. Es la fuente de verdad de chats y mensajes de **WhatsApp (Cloud API)** y **Telegram**. El front cachea los mensajes en IndexedDB y se sincroniza por **SSE**.
 - **Tema**: claro y oscuro, con toggle persistente y sin flash (FOUC) al cargar.
 

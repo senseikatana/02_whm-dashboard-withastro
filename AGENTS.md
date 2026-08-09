@@ -16,6 +16,15 @@ Manage the background server with `astro dev stop`, `astro dev status`, and `ast
 - `bun run build` — production build.
 - To test messaging end-to-end locally you need `server/` running (SQLite + SSE + webhooks).
 
+## Roles & permissions
+
+- `src/auth/roles.ts` — capability model (`Capability`), `DEFAULT_ROLES`, and helpers `can()`, `roleLabel()`, `resolveRoleId()`.
+- `src/data/rolesStore.ts` — localStorage persistence of customized roles (`whm.roles`), with `resetRoles()` to restore defaults.
+- `src/hooks/useRoles.ts` — reactive roles hook.
+- UI is gated via `can(roleId, cap, roles)` in `src/components/dashboard/App.tsx` (nav items, view guards, Kitt panel, mock injection) and via `canEdit`/`canDelete` props on `CrudView`.
+- Users reference roles by id in the `role` field; `LoginScreen` maps them with `resolveRoleId()`. Seeded roles (`admin`, `manager`, `picker`, `formador`, `practicas`) are merged into an existing DB without deleting custom users.
+- `src/data/localStore.ts` uses `SEED_VERSION` (`whm.seed.version`) to run one-time seed merges when the seed data set changes; bump it to force a re-seed of missing rows.
+
 ## Project structure
 
 - `src/` — Astro SPA (React island, Tailwind v4, IndexedDB stores).
