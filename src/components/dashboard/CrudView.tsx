@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useState, type SyntheticEvent } from 'react';
 import {
+	ArrowDown,
+	ArrowUp,
 	CheckSquare,
 	Dices,
 	Edit,
@@ -18,7 +20,10 @@ import { extractJson } from '../../lib/json';
 import { listNutProducts } from '../../lib/kittFiles';
 import type { CollectionKey, Doc, FieldDef } from '../../types';
 import type { CollectionsState, CollectionState } from '../../hooks/useCollections';
+import { useFilters } from '../../hooks/useFilters';
 import { useIsMobile } from '../../hooks/useIsMobile';
+import { useSort } from '../../hooks/useSort';
+import { DataFilters } from './DataFilters';
 import { Modal } from './Modal';
 import { StatusBadge } from './StatusBadge';
 import { useToast } from './Toast';
@@ -65,7 +70,12 @@ export function CrudView({
 	const [nutProducts, setNutProducts] = useState<string[]>([]);
 
 	const { docs, loading, error } = collection;
-	const selectedAll = docs.length > 0 && selected.length === docs.length;
+	const { filteredDocs, filters, setQuery, setSelect, setNumber, clear, activeCount } = useFilters(
+		docs,
+		fields,
+	);
+	const { sortedDocs, sortKey, direction, toggleSort } = useSort(filteredDocs, fields);
+	const selectedAll = sortedDocs.length > 0 && selected.length === sortedDocs.length;
 
 	const labelOf = (field: FieldDef): string => S.fieldLabels[field.key] ?? field.label;
 
@@ -134,7 +144,7 @@ export function CrudView({
 	}, [fields, entity, docs, allCollections, nutProducts]);
 
 	const toggleAll = () => {
-		setSelected(selectedAll ? [] : docs.map((doc) => doc.id));
+		setSelected(selectedAll ? [] : sortedDocs.map((doc) => doc.id));
 	};
 
 	const toggleOne = (id: string) => {
@@ -371,7 +381,18 @@ export function CrudView({
 				<div>
 					<h2 className="text-xl font-bold text-gray-900 dark:text-white">{title}</h2>
 					<p className="mt-1 text-xs text-gray-500 dark:text-slate-400">
-						{docs.length} {S.records}
+						{activeCount > 0 ? (
+							<>
+								<span className="font-bold text-indigo-600 dark:text-indigo-300">
+									{sortedDocs.length}
+								</span>{' '}
+								/ {docs.length} {S.records}
+							</>
+						) : (
+							<>
+								{docs.length} {S.records}
+							</>
+						)}
 					</p>
 				</div>
 				<div className="flex flex-wrap items-center gap-3">
@@ -399,6 +420,16 @@ export function CrudView({
 				</div>
 			</div>
 
+			<DataFilters
+				fields={fields}
+				filters={filters}
+				activeCount={activeCount}
+				onQuery={setQuery}
+				onSelect={setSelect}
+				onNumber={setNumber}
+				onClear={clear}
+			/>
+
 			<div className="relative flex-1 overflow-x-auto">
 				{loading && (
 					<div className="absolute inset-0 z-10 flex items-center justify-center bg-white/60 backdrop-blur-sm dark:bg-slate-900/60">
@@ -413,10 +444,15 @@ export function CrudView({
 				{!loading && !error && docs.length === 0 && (
 					<p className="p-10 text-center text-sm text-gray-500 dark:text-slate-400">{S.emptyState}</p>
 				)}
+				{!loading && !error && docs.length > 0 && sortedDocs.length === 0 && (
+					<p className="p-10 text-center text-sm text-gray-500 dark:text-slate-400">
+						{S.noResults}
+					</p>
+				)}
 
-			{!loading && !error && docs.length > 0 && isMobile && (
+			{!loading && !error && sortedDocs.length > 0 && isMobile && (
 				<div className="space-y-3 p-4">
-					{docs.map((doc) => (
+					{sortedDocs.map((doc) => (
 						<div
 							key={doc.id}
 							className={`card card-sm border bg-white shadow-sm dark:bg-slate-900 ${
@@ -493,7 +529,7 @@ export function CrudView({
 				</div>
 			)}
 
-			{!loading && !error && docs.length > 0 && !isMobile && (
+			{!loading && !error && sortedDocs.length > 0 && !isMobile && (
 				<table className="w-full border-collapse text-left">
 						<thead>
 							<tr className="border-b border-gray-200 bg-gray-50/80 dark:border-slate-800 dark:bg-slate-800/50">
@@ -511,21 +547,30 @@ export function CrudView({
 										)}
 									</button>
 								</th>
-								{fields.map((field) => (
-									<th
-										key={field.key}
-										className="px-4 py-3 text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-slate-400"
+							{fields.map((field) => (
+								<th
+									key={field.key}
+									className="px-4 py-3 text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-slate-400"
+								>
+									<button
+										type="button"
+										onClick={() => toggleSort(field.key)}
+										title={`${labelOf(field)}`}
+										className="inline-flex items-center gap-1 uppercase tracking-wider transition hover:text-indigo-600 dark:hover:text-indigo-300"
 									>
 										{labelOf(field)}
-									</th>
-								))}
+										{sortKey === field.key &&
+											(direction === 'asc' ? <ArrowUp size={12} /> : <ArrowDown size={12} />)}
+									</button>
+								</th>
+							))}
 								<th className="px-4 py-3 text-right text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-slate-400">
 									{S.actions}
 								</th>
 							</tr>
 						</thead>
-						<tbody>
-							{docs.map((doc) => (
+					<tbody>
+							{sortedDocs.map((doc) => (
 								<tr
 									key={doc.id}
 									className={`border-b border-gray-100 transition hover:bg-indigo-50/30 dark:border-slate-800 dark:hover:bg-indigo-950/30 ${

@@ -16,6 +16,196 @@ function queryString(value: unknown): string | undefined {
 	return typeof value === 'string' ? value : undefined;
 }
 
+interface EndpointDoc {
+	method: 'GET' | 'POST';
+	path: string;
+	description: string;
+	params: string[];
+}
+
+const ENDPOINTS: EndpointDoc[] = [
+	{
+		method: 'GET',
+		path: '/api',
+		description: 'Manifest JSON con todos los endpoints disponibles.',
+		params: [],
+	},
+	{
+		method: 'GET',
+		path: '/api/health',
+		description: 'Liveness del server y estado de configuración de los canales.',
+		params: [],
+	},
+	{
+		method: 'GET',
+		path: '/api/events',
+		description: 'Hub de eventos en tiempo real (Server-Sent Events).',
+		params: [],
+	},
+	{
+		method: 'GET',
+		path: '/api/chats',
+		description: 'Lista las conversaciones, opcionalmente filtradas por canal.',
+		params: ['channel?'],
+	},
+	{
+		method: 'GET',
+		path: '/api/messages',
+		description: 'Lista los mensajes de un chat (polling incremental con afterId).',
+		params: ['chatId', 'afterId?'],
+	},
+	{
+		method: 'POST',
+		path: '/api/telegram/send',
+		description: 'Envía un mensaje por Telegram.',
+		params: ['chatId', 'text'],
+	},
+	{
+		method: 'GET',
+		path: '/api/telegram/status',
+		description: 'Indica si el bot de Telegram está configurado.',
+		params: [],
+	},
+	{
+		method: 'POST',
+		path: '/api/whatsapp/send',
+		description: 'Envía un mensaje por WhatsApp Cloud API.',
+		params: ['to', 'text'],
+	},
+	{
+		method: 'GET',
+		path: '/api/whatsapp/status',
+		description: 'Estado de WhatsApp Cloud API (phone_id incluido).',
+		params: [],
+	},
+	{
+		method: 'GET',
+		path: '/api/whatsapp/webhook',
+		description: 'Verificación del webhook de Meta (handshake).',
+		params: ['hub.mode', 'hub.verify_token', 'hub.challenge'],
+	},
+	{
+		method: 'POST',
+		path: '/api/whatsapp/webhook',
+		description: 'Webhook entrante de Meta con los mensajes de WhatsApp.',
+		params: [],
+	},
+	{
+		method: 'GET',
+		path: '/api/kitt/health',
+		description: 'Estado del proveedor de IA configurado para KITT.',
+		params: [],
+	},
+	{
+		method: 'POST',
+		path: '/api/kitt/chat',
+		description: 'Chat con KITT en streaming (SSE): messages, snapshot y files.',
+		params: ['messages', 'snapshot?', 'files?'],
+	},
+];
+
+function landingHtml(): string {
+	const rows = ENDPOINTS.map(
+		(endpoint) => `
+			<tr>
+				<td><span class="method method-${endpoint.method.toLowerCase()}">${endpoint.method}</span></td>
+				<td><code>${endpoint.path}</code></td>
+				<td>${endpoint.description}</td>
+				<td>${endpoint.params.map((param) => `<code class="param">${param}</code>`).join(' ') || '<span class="muted">—</span>'}</td>
+			</tr>`,
+	).join('');
+
+	return `<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>WarehouseFlow · Server API</title>
+<style>
+	:root { color-scheme: dark; }
+	* { box-sizing: border-box; }
+	body {
+		margin: 0;
+		font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+		background: #0b1120;
+		color: #e2e8f0;
+		line-height: 1.6;
+	}
+	.wrap { max-width: 960px; margin: 0 auto; padding: 3rem 1.5rem; }
+	.badge {
+		display: inline-block;
+		border: 1px solid #22d3ee;
+		color: #22d3ee;
+		border-radius: 9999px;
+		padding: 0.15rem 0.7rem;
+		font-size: 0.7rem;
+		letter-spacing: 0.1em;
+		text-transform: uppercase;
+	}
+	h1 { font-size: 1.6rem; margin: 1rem 0 0.25rem; color: #f8fafc; }
+	p.lede { color: #94a3b8; margin: 0 0 2rem; }
+	.code-url {
+		background: #0f172a;
+		border: 1px solid #1e293b;
+		border-radius: 0.5rem;
+		padding: 0.75rem 1rem;
+		font-size: 0.9rem;
+		color: #67e8f9;
+		margin-bottom: 2rem;
+		overflow-x: auto;
+	}
+	table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+	th {
+		text-align: left;
+		color: #64748b;
+		font-size: 0.7rem;
+		letter-spacing: 0.1em;
+		text-transform: uppercase;
+		border-bottom: 1px solid #1e293b;
+		padding: 0.6rem 0.5rem;
+	}
+	td { padding: 0.6rem 0.5rem; border-bottom: 1px solid #16203a; vertical-align: top; }
+	td code { color: #a5b4fc; }
+	code.param { color: #94a3b8; font-size: 0.75rem; }
+	.method {
+		font-size: 0.65rem;
+		font-weight: 700;
+		border-radius: 0.35rem;
+		padding: 0.15rem 0.5rem;
+		letter-spacing: 0.05em;
+	}
+	.method-get { background: #0f766e22; color: #2dd4bf; border: 1px solid #0f766e; }
+	.method-post { background: #b4530922; color: #fbbf24; border: 1px solid #b45309; }
+	.muted { color: #475569; }
+	.links { margin-top: 2rem; font-size: 0.85rem; }
+	.links a { color: #818cf8; text-decoration: none; }
+	.links a:hover { text-decoration: underline; }
+	.note { color: #64748b; font-size: 0.8rem; margin-top: 0.5rem; }
+</style>
+</head>
+<body>
+<div class="wrap">
+	<span class="badge">whm-server · express + sqlite</span>
+	<h1>WarehouseFlow · Server API</h1>
+	<p class="lede">Backend de mensajería (WhatsApp, Telegram y KITT). Documentación completa en <a href="#" style="color:#818cf8">/docs</a> del dashboard.</p>
+	<div class="code-url">http://localhost:8787</div>
+	<table>
+		<thead>
+			<tr><th>Método</th><th>Ruta</th><th>Descripción</th><th>Parámetros</th></tr>
+		</thead>
+		<tbody>${rows}</tbody>
+	</table>
+	<div class="links">
+		<a href="/api">Manifest JSON → /api</a>
+		&nbsp;·&nbsp;
+		<a href="/api/health">Health check</a>
+	</div>
+	<p class="note">Documentación interactiva de cada endpoint en /docs del dashboard.</p>
+</div>
+</body>
+</html>`;
+}
+
 async function main(): Promise<void> {
 	await ensureSchema();
 
@@ -42,6 +232,18 @@ async function main(): Promise<void> {
 		(req: Request, res: Response, next: NextFunction) => {
 			handler(req, res).catch(next);
 		};
+
+	app.get('/', (_req, res) => {
+		res.type('html').send(landingHtml());
+	});
+
+	app.get('/api', (_req, res) => {
+		res.json({
+			name: 'whm-server',
+			baseUrl: `http://localhost:${port}`,
+			endpoints: ENDPOINTS,
+		});
+	});
 
 	app.get('/api/health', (_req, res) => {
 		res.json({

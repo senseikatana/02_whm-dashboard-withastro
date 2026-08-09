@@ -61,6 +61,14 @@ const es = {
 	generate: 'Generar',
 	selectPlaceholder: 'Selecciona...',
 
+	search: 'Buscar...',
+	filters: 'Filtros',
+	clearFilters: 'Limpiar filtros',
+	all: 'Todos',
+	min: 'Mín',
+	max: 'Máx',
+	noResults: 'Sin resultados con los filtros actuales.',
+
 	saved: 'Cambios guardados.',
 	created: 'Registro creado.',
 	deleted: 'Registro eliminado.',
@@ -221,6 +229,14 @@ export const en: StringsDict = {
 	generate: 'Generate',
 	selectPlaceholder: 'Select...',
 
+	search: 'Search...',
+	filters: 'Filters',
+	clearFilters: 'Clear filters',
+	all: 'All',
+	min: 'Min',
+	max: 'Max',
+	noResults: 'No results match the current filters.',
+
 	saved: 'Changes saved.',
 	created: 'Record created.',
 	deleted: 'Record deleted.',
@@ -378,6 +394,14 @@ export const ca: StringsDict = {
 	aiFillForm: 'Auto IA',
 	generate: 'Genera',
 	selectPlaceholder: 'Selecciona...',
+
+	search: 'Cerca...',
+	filters: 'Filtres',
+	clearFilters: 'Neteja filtres',
+	all: 'Tots',
+	min: 'Mín',
+	max: 'Màx',
+	noResults: 'Sense resultats amb els filtres actuals.',
 
 	saved: 'Canvis desats.',
 	created: 'Registre creat.',
@@ -537,6 +561,14 @@ export const fr: StringsDict = {
 	aiFillForm: 'Auto IA',
 	generate: 'Générer',
 	selectPlaceholder: 'Sélectionner...',
+
+	search: 'Rechercher...',
+	filters: 'Filtres',
+	clearFilters: 'Effacer les filtres',
+	all: 'Tous',
+	min: 'Min',
+	max: 'Max',
+	noResults: 'Aucun résultat avec les filtres actuels.',
 
 	saved: 'Modifications enregistrées.',
 	created: 'Enregistrement créé.',
