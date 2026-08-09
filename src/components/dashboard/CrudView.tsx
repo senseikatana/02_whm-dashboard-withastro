@@ -1,0 +1,455 @@
+import { useState, type SyntheticEvent } from 'react';
+import {
+	CheckSquare,
+	Edit,
+	Loader2,
+	Plus,
+	Sparkles,
+	Square,
+	Trash2,
+} from 'lucide-react';
+import type { AppStore } from '../../data/store';
+import { S } from '../../data/strings';
+import { ai } from '../../lib/ai';
+import { extractJson } from '../../lib/json';
+import { SKUGenerator } from '../../lib/sku';
+import type { CollectionKey, Doc, FieldDef } from '../../types';
+import type { CollectionState } from '../../hooks/useCollections';
+import { Modal } from './Modal';
+import { StatusBadge } from './StatusBadge';
+import { useToast } from './Toast';
+
+interface CrudViewProps {
+	entity: CollectionKey;
+	title: string;
+	store: AppStore;
+	collection: CollectionState;
+	fields: readonly FieldDef[];
+	canInjectMock: boolean;
+	onInjectMock: (entity: CollectionKey, count: number) => Promise<void>;
+}
+
+type ConfirmState = { mode: 'single' | 'batch'; docId?: string };
+
+const BADGE_FIELDS = new Set(['status', 'type']);
+
+export function CrudView({
+	entity,
+	title,
+	store,
+	collection,
+	fields,
+	canInjectMock,
+	onInjectMock,
+}: CrudViewProps) {
+	const toast = useToast();
+	const [modalOpen, setModalOpen] = useState(false);
+	const [editingId, setEditingId] = useState<string | null>(null);
+	const [form, setForm] = useState<Record<string, unknown>>({});
+	const [selected, setSelected] = useState<string[]>([]);
+	const [confirm, setConfirm] = useState<ConfirmState | null>(null);
+	const [saving, setSaving] = useState(false);
+	const [aiFilling, setAiFilling] = useState(false);
+	const [injecting, setInjecting] = useState(false);
+
+	const { docs, loading, error } = collection;
+	const selectedAll = docs.length > 0 && selected.length === docs.length;
+
+	const toggleAll = () => {
+		setSelected(selectedAll ? [] : docs.map((doc) => doc.id));
+	};
+
+	const toggleOne = (id: string) => {
+		setSelected((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
+	};
+
+	const emptyForm = () =>
+		Object.fromEntries(fields.map((field) => [field.key, field.type === 'number' ? 0 : '']));
+
+	const openCreate = () => {
+		setEditingId(null);
+		setForm(emptyForm());
+		setModalOpen(true);
+	};
+
+	const openEdit = (doc: Doc) => {
+		setEditingId(doc.id);
+		setForm(Object.fromEntries(fields.map((field) => [field.key, doc[field.key] ?? ''])));
+		setModalOpen(true);
+	};
+
+	const handleSubmit = async (event: SyntheticEvent) => {
+		event.preventDefault();
+		setSaving(true);
+		try {
+			const payload = { ...form };
+			if (!editingId) {
+				for (const field of fields) {
+					if (field.auto && !payload[field.key]) {
+						payload[field.key] = SKUGenerator.generate(
+							String(payload.abcClass ?? ''),
+							String(payload.name ?? ''),
+						);
+					}
+				}
+			}
+
+			if (editingId) {
+				await store.update(entity, editingId, payload);
+				toast(S.saved, 'success');
+			} else {
+				await store.create(entity, payload);
+				toast(S.created, 'success');
+			}
+			setModalOpen(false);
+		} catch (err) {
+			console.error(err);
+			toast(S.errorOp, 'error');
+		} finally {
+			setSaving(false);
+		}
+	};
+
+	const handleDelete = async () => {
+		if (!confirm) return;
+		try {
+			if (confirm.mode === 'batch') {
+				await store.batchDelete(entity, selected);
+				setSelected([]);
+			} else if (confirm.docId) {
+				await store.remove(entity, confirm.docId);
+			}
+			toast(S.deleted, 'success');
+		} catch (err) {
+			console.error(err);
+			toast(S.errorOp, 'error');
+		} finally {
+			setConfirm(null);
+		}
+	};
+
+	const handleAIFill = async () => {
+		setAiFilling(true);
+		try {
+			const selectOptions = fields
+				.filter((field) => field.type === 'select')
+				.map((field) => `${field.key}: ${(field.options ?? []).join(' | ')}`)
+				.join('\n');
+			const raw = await ai.generate(
+				`Generá un registro ficticio realista para almacén. Tabla: "${title}". Devolvé ÚNICAMENTE JSON con estas claves: ${fields.map((f) => f.key).join(', ')}.${selectOptions ? `\nValores posibles para los select:\n${selectOptions}` : ''}`,
+			);
+			const parsed = extractJson(raw);
+			if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) {
+				throw new Error('Respuesta del asistente inválida.');
+			}
+			const source = parsed as Record<string, unknown>;
+			setForm(Object.fromEntries(fields.map((field) => [field.key, source[field.key] ?? ''])));
+			toast(S.saved, 'success');
+		} catch {
+			toast(S.aiNotConfigured, 'info');
+		} finally {
+			setAiFilling(false);
+		}
+	};
+
+	const handleMock = async () => {
+		if (injecting) return;
+		setInjecting(true);
+		try {
+			await onInjectMock(entity, 10);
+			toast(S.mockGenerated(10), 'success');
+		} catch (err) {
+			console.error(err);
+			toast(S.errorOp, 'error');
+		} finally {
+			setInjecting(false);
+		}
+	};
+
+	return (
+		<div className="flex h-full animate-fade-in flex-col overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
+			{selected.length > 0 && (
+				<div className="z-20 flex items-center justify-between bg-indigo-600 px-4 py-3 text-white shadow-md animate-fade-in-down">
+					<span className="flex items-center gap-2 text-sm font-semibold">
+						<span className="rounded bg-white px-2 py-0.5 text-xs font-bold text-indigo-600">
+							{selected.length}
+						</span>
+						{S.selectedRecords}
+					</span>
+					<div className="flex gap-2">
+						<button
+							type="button"
+							onClick={() => setSelected([])}
+							className="rounded-lg bg-indigo-700 px-3 py-1.5 text-sm transition hover:bg-indigo-800"
+						>
+							{S.cancel}
+						</button>
+						<button
+							type="button"
+							onClick={() => setConfirm({ mode: 'batch' })}
+							className="flex items-center gap-1.5 rounded-lg bg-rose-500 px-3 py-1.5 text-sm transition hover:bg-rose-600"
+						>
+							<Trash2 size={15} />
+							{S.delete}
+						</button>
+					</div>
+				</div>
+			)}
+
+			<div className="flex flex-col gap-4 border-b border-gray-200 bg-gray-50/50 p-4 md:flex-row md:items-center md:justify-between md:p-6">
+				<div>
+					<h2 className="text-xl font-bold text-gray-900">{title}</h2>
+					<p className="mt-1 text-xs text-gray-500">
+						{docs.length} {S.records}
+					</p>
+				</div>
+				<div className="flex flex-wrap items-center gap-3">
+					<button
+						type="button"
+						onClick={handleMock}
+						disabled={!canInjectMock || injecting}
+						className="flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm transition hover:bg-gray-50 disabled:opacity-50"
+					>
+						{injecting ? (
+							<Loader2 size={15} className="animate-spin text-indigo-500" />
+						) : (
+							<Sparkles size={15} className="text-indigo-500" />
+						)}
+						{S.generateMock}
+					</button>
+					<button
+						type="button"
+						onClick={openCreate}
+						className="flex items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-indigo-700"
+					>
+						<Plus size={15} />
+						{S.add}
+					</button>
+				</div>
+			</div>
+
+			<div className="relative flex-1 overflow-x-auto">
+				{loading && (
+					<div className="absolute inset-0 z-10 flex items-center justify-center bg-white/60 backdrop-blur-sm">
+						<Loader2 size={28} className="animate-spin text-indigo-600" />
+					</div>
+				)}
+				{error && (
+					<div className="absolute inset-0 z-10 flex items-center justify-center bg-white/60 p-8 text-center text-sm text-rose-600">
+						{error}
+					</div>
+				)}
+				{!loading && !error && docs.length === 0 && (
+					<p className="p-10 text-center text-sm text-gray-500">{S.emptyState}</p>
+				)}
+
+				{!loading && !error && docs.length > 0 && (
+					<table className="w-full border-collapse text-left">
+						<thead>
+							<tr className="border-b border-gray-200 bg-gray-50/80">
+								<th className="w-12 px-4 py-3 text-center">
+									<button
+										type="button"
+										onClick={toggleAll}
+										aria-label="Seleccionar todo"
+										className="text-gray-400 transition hover:text-indigo-600"
+									>
+										{selectedAll ? (
+											<CheckSquare size={18} className="text-indigo-600" />
+										) : (
+											<Square size={18} />
+										)}
+									</button>
+								</th>
+								{fields.map((field) => (
+									<th
+										key={field.key}
+										className="px-4 py-3 text-xs font-bold uppercase tracking-wider text-gray-500"
+									>
+										{field.label}
+									</th>
+								))}
+								<th className="px-4 py-3 text-right text-xs font-bold uppercase tracking-wider text-gray-500">
+									{S.actions}
+								</th>
+							</tr>
+						</thead>
+						<tbody>
+							{docs.map((doc) => (
+								<tr
+									key={doc.id}
+									className={`border-b border-gray-100 transition hover:bg-indigo-50/30 ${
+										selected.includes(doc.id) ? 'bg-indigo-50/50' : ''
+									}`}
+								>
+									<td className="px-4 py-3 text-center">
+										<button
+											type="button"
+											onClick={() => toggleOne(doc.id)}
+											aria-label="Seleccionar fila"
+											className="text-gray-400 transition hover:text-indigo-600"
+										>
+											{selected.includes(doc.id) ? (
+												<CheckSquare size={18} className="text-indigo-600" />
+											) : (
+												<Square size={18} />
+											)}
+										</button>
+									</td>
+									{fields.map((field) => {
+										const value = doc[field.key];
+										return (
+											<td key={field.key} className="whitespace-nowrap px-4 py-3 text-sm text-gray-700">
+												{BADGE_FIELDS.has(field.key) && typeof value === 'string' ? (
+													<StatusBadge status={value} />
+												) : (
+													String(value ?? '')
+												)}
+											</td>
+										);
+									})}
+									<td className="whitespace-nowrap px-4 py-3 text-right">
+										<button
+											type="button"
+											onClick={() => openEdit(doc)}
+											aria-label={S.edit}
+											className="mr-2 rounded p-1.5 text-gray-400 transition hover:bg-gray-100 hover:text-indigo-600"
+										>
+											<Edit size={16} />
+										</button>
+										<button
+											type="button"
+											onClick={() => setConfirm({ mode: 'single', docId: doc.id })}
+											aria-label={S.delete}
+											className="rounded p-1.5 text-gray-400 transition hover:bg-rose-50 hover:text-rose-600"
+										>
+											<Trash2 size={16} />
+										</button>
+									</td>
+								</tr>
+							))}
+						</tbody>
+					</table>
+				)}
+			</div>
+
+			{modalOpen && (
+				<Modal
+					title={`${editingId ? S.edit : S.add} · ${title}`}
+					onClose={() => setModalOpen(false)}
+					footer={
+						<>
+							<button
+								type="button"
+								onClick={() => setModalOpen(false)}
+								className="rounded-lg border border-gray-300 bg-white px-5 py-2.5 text-sm font-semibold text-gray-700 transition hover:bg-gray-50"
+							>
+								{S.cancel}
+							</button>
+							<button
+								type="submit"
+								form="crud-form"
+								disabled={saving}
+								className="flex items-center gap-2 rounded-lg bg-indigo-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-indigo-700 disabled:opacity-50"
+							>
+								{saving && <Loader2 size={15} className="animate-spin" />}
+								{S.save}
+							</button>
+						</>
+					}
+				>
+					<form id="crud-form" onSubmit={handleSubmit} className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+						{!editingId && ai.isConfigured() && (
+							<div className="flex justify-end sm:col-span-2">
+								<button
+									type="button"
+									onClick={handleAIFill}
+									disabled={aiFilling}
+									className="flex items-center gap-1.5 rounded-lg bg-indigo-100 px-3 py-1.5 text-xs font-bold text-indigo-700 transition hover:bg-indigo-200"
+								>
+									{aiFilling ? <Loader2 size={13} className="animate-spin" /> : <Sparkles size={13} />}
+									{S.aiFillForm}
+								</button>
+							</div>
+						)}
+						{fields.map((field) => {
+							const isAuto = Boolean(field.auto && !editingId);
+							const disabled = Boolean(field.readonly && editingId) || isAuto || saving;
+							const isNumber = field.type === 'number';
+							return (
+								<div key={field.key} className={field.colSpan ? 'sm:col-span-2' : ''}>
+									<label
+										htmlFor={`field-${field.key}`}
+										className="mb-1.5 block text-xs font-bold uppercase tracking-wide text-gray-600"
+									>
+										{field.label}
+									</label>
+									{field.type === 'select' ? (
+										<select
+											id={`field-${field.key}`}
+											value={String(form[field.key] ?? '')}
+											onChange={(event) => setForm({ ...form, [field.key]: event.target.value })}
+											disabled={disabled}
+											className="w-full rounded-lg border border-gray-300 bg-white p-2.5 text-sm outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 disabled:bg-gray-100"
+										>
+											<option value="">Selecciona...</option>
+											{field.options?.map((option) => (
+												<option key={option} value={option}>
+													{option}
+												</option>
+											))}
+										</select>
+									) : (
+										<input
+											id={`field-${field.key}`}
+											type={isNumber ? 'number' : 'text'}
+											value={String(form[field.key] ?? '')}
+											onChange={(event) =>
+												setForm({
+													...form,
+													[field.key]: isNumber ? Number(event.target.value) : event.target.value,
+												})
+											}
+											disabled={disabled}
+											placeholder={isAuto ? 'Auto' : ''}
+											className="w-full rounded-lg border border-gray-300 p-2.5 text-sm outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 disabled:bg-gray-100"
+										/>
+									)}
+								</div>
+							);
+						})}
+					</form>
+				</Modal>
+			)}
+
+			{confirm && (
+				<Modal
+					title={S.deleteConfirmTitle}
+					onClose={() => setConfirm(null)}
+					footer={
+						<>
+							<button
+								type="button"
+								onClick={() => setConfirm(null)}
+								className="rounded-lg border border-gray-300 bg-white px-5 py-2.5 text-sm font-semibold text-gray-700 transition hover:bg-gray-50"
+							>
+								{S.cancel}
+							</button>
+							<button
+								type="button"
+								onClick={handleDelete}
+								className="rounded-lg bg-rose-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-rose-700"
+							>
+								{S.delete}
+							</button>
+						</>
+					}
+				>
+					<p className="text-sm text-gray-600">
+						{confirm.mode === 'batch' ? S.deleteBatchConfirmBody : S.deleteConfirmBody}
+					</p>
+				</Modal>
+			)}
+		</div>
+	);
+}
