@@ -1,0 +1,12 @@
+{
+  "region": "eu-central-1",
+  "app": {
+    "name": "whm-dashboard-app",
+    "framework": "astro",
+    "httpPort": 4321,
+    "build": {
+      "command": "bun run build",
+      "outputDirectory": "dist"
+    }
+  }
+}
