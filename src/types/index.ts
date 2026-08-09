@@ -9,7 +9,7 @@ export const COLLECTION_KEYS = [
 
 export type CollectionKey = (typeof COLLECTION_KEYS)[number];
 
-export type ViewKey = CollectionKey | 'dashboard' | 'picking' | 'whatsapp';
+export type ViewKey = CollectionKey | 'dashboard' | 'picking' | 'messaging';
 
 export type Doc = { id: string } & Record<string, unknown>;
 
@@ -25,6 +25,8 @@ export interface Session extends Operator {}
 
 export type FieldType = 'text' | 'number' | 'select' | 'textarea';
 
+export type GeneratorKey = 'sku' | 'orderRef' | 'routeId' | 'code';
+
 export interface FieldDef {
 	key: string;
 	label: string;
@@ -32,5 +34,8 @@ export interface FieldDef {
 	options?: readonly string[];
 	readonly?: boolean;
 	auto?: boolean;
+	gen?: GeneratorKey;
 	colSpan?: boolean;
+	required?: boolean;
+	min?: number;
 }

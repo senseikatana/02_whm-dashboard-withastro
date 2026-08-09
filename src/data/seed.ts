@@ -42,17 +42,17 @@ const ROUTES: SeedRow[] = [
 ];
 
 const CRM: SeedRow[] = [
-	{ company: 'LogistiK S.A.', leadScore: 85, status: 'En Negociación' },
-	{ company: 'FarmaPlus', leadScore: 92, status: 'Cliente Activo' },
-	{ company: 'RetailAndes', leadScore: 45, status: 'Nuevo Lead' },
-	{ company: 'TechCorp Argentina', leadScore: 70, status: 'En Negociación' },
+	{ code: 'CL-1001', company: 'LogistiK S.A.', leadScore: 85, status: 'En Negociación' },
+	{ code: 'CL-1002', company: 'FarmaPlus', leadScore: 92, status: 'Cliente Activo' },
+	{ code: 'CL-1003', company: 'RetailAndes', leadScore: 45, status: 'Nuevo Lead' },
+	{ code: 'CL-1004', company: 'TechCorp Argentina', leadScore: 70, status: 'En Negociación' },
 ];
 
 const USERS: SeedRow[] = [
-	{ name: 'Martín Ruiz', role: 'Admin', status: 'Activo' },
-	{ name: 'Valentina Díaz', role: 'Manager', status: 'Activo' },
-	{ name: 'Santiago López', role: 'Picker', status: 'Activo' },
-	{ name: 'Camila Torres', role: 'Picker', status: 'Inactivo' },
+	{ code: 'OP-1001', name: 'Martín Ruiz', role: 'Admin', status: 'Activo' },
+	{ code: 'OP-1002', name: 'Valentina Díaz', role: 'Manager', status: 'Activo' },
+	{ code: 'OP-1003', name: 'Santiago López', role: 'Picker', status: 'Activo' },
+	{ code: 'OP-1004', name: 'Camila Torres', role: 'Picker', status: 'Inactivo' },
 ];
 
 export const seedData: Record<CollectionKey, readonly SeedRow[]> = {

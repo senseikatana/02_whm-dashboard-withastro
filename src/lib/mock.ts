@@ -1,5 +1,6 @@
 import type { CollectionKey } from '../types';
-import { SKUGenerator } from './sku';
+import { generateCode } from './generators';
+import { generateUniqueNutCode } from './nut-codes-generator';
 
 const pick = <T>(values: readonly [T, ...T[]]): T =>
 	values[Math.floor(Math.random() * values.length)];
@@ -75,6 +76,7 @@ const ROLES = ['Picker', 'Picker', 'Manager', 'Admin'] as const;
 
 export function generateMock(collection: CollectionKey, count: number): Record<string, unknown>[] {
 	const items: Record<string, unknown>[] = [];
+	const nutCodes: string[] = [];
 
 	for (let i = 0; i < count; i++) {
 		switch (collection) {
@@ -84,8 +86,10 @@ export function generateMock(collection: CollectionKey, count: number): Record<s
 				const stock = Math.random() < 0.25 ? range(0, min) : range(min, min * 8);
 				const status = stock <= min * 0.4 ? 'Crítico' : stock < min ? 'Bajo' : 'OK';
 				const abcClass = pick(ABC);
+				const sku = generateUniqueNutCode(nutCodes);
+				nutCodes.push(sku);
 				items.push({
-					sku: SKUGenerator.generate(abcClass, name),
+					sku,
 					name,
 					abcClass,
 					stock,
@@ -117,13 +121,19 @@ export function generateMock(collection: CollectionKey, count: number): Record<s
 				break;
 			case 'crm':
 				items.push({
+					code: generateCode('CL'),
 					company: pick(COMPANIES),
 					leadScore: range(20, 95),
 					status: pick(STATUS_CRM),
 				});
 				break;
 			case 'users':
-				items.push({ name: pick(OPERATORS), role: pick(ROLES), status: pick(STATUS_USER) });
+				items.push({
+					code: generateCode('OP'),
+					name: pick(OPERATORS),
+					role: pick(ROLES),
+					status: pick(STATUS_USER),
+				});
 				break;
 		}
 	}

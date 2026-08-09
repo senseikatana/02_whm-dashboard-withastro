@@ -1,10 +1,8 @@
-import { isFirebaseConfigured } from '../lib/firebase';
 import type { CollectionKey, Doc } from '../types';
-import { createFirestoreStore } from './firestoreStore';
 import { createLocalStore } from './localStore';
 
 export interface AppStore {
-	readonly kind: 'local' | 'firestore';
+	readonly kind: 'local';
 	subscribeCollection(
 		col: CollectionKey,
 		cb: (docs: Doc[], error?: string) => void,
@@ -20,7 +18,7 @@ let store: AppStore | null = null;
 
 export function getStore(): AppStore {
 	if (!store) {
-		store = isFirebaseConfigured() ? createFirestoreStore() : createLocalStore();
+		store = createLocalStore();
 	}
 	return store;
 }
