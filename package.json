@@ -1,20 +1,21 @@
 {
-  "name": "whm-dashboard-app",
+  "name": "02-whm-dashboard-withastro",
   "type": "module",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "engines": {
     "node": ">=22.12.0"
   },
   "scripts": {
-    "dev": "astro dev",
-    "build": "astro build",
+    "dev": "bun run dev",
+    "build": "bun run build",
     "preview": "astro preview",
     "astro": "astro",
     "check": "astro check",
     "dev:server": "bun --watch server/index.ts",
     "dev:all": "astro dev --background && bun --watch server/index.ts",
     "check:server": "tsc --noEmit -p server/tsconfig.json",
-    "seed:supabase": "bun run scripts/seed-supabase.ts"
+    "seed:supabase": "bun run scripts/seed-supabase.ts",
+    "test": "bun run test"
   },
   "dependencies": {
     "@astrojs/mdx": "^7.0.5",
@@ -26,14 +27,8 @@
     "astro": "^7.2.0",
     "cors": "^2.8.6",
     "dotenv": "^17.4.2",
-    "drizzle-orm": "^0.45.2",
-    "express": "^5.2.1",
-    "jose": "^6.2.8",
     "lucide-react": "^1.30.0",
-    "react": "^19.2.8",
-    "react-dom": "^19.2.8",
     "tailwindcss": "^4.3.3",
-    "xlsx": "^0.18.5",
     "zod": "^4.4.3"
   },
   "devDependencies": {
@@ -41,11 +36,9 @@
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.6",
     "@types/node": "^26.2.0",
-    "@types/react": "^19.2.18",
     "@types/react-dom": "^19.2.4",
-    "daisyui": "^5.7.16",
-    "postgres": "^3.4.9",
-    "prisma": "^7.9.1",
     "typescript": "5.9.3"
-  }
+  },
+  "author": "Sergio Jurado",
+  "description": "Proyecto 02-whm-dashboard-withastro"
 }
