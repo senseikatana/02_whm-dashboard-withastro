@@ -5,7 +5,7 @@ import { esinsaSeed } from '../src/data/seedEsinsa';
 import type { CollectionKey } from '../src/types';
 
 const TABLE = 'wms_docs';
-const CSV_DIR = join(import.meta.dir, 'csv');
+const CSV_DIR = join(process.cwd(), 'seed', 'csv');
 
 const url = process.env.PUBLIC_INSFORGE_URL;
 const anonKey = process.env.PUBLIC_INSFORGE_ANON_KEY;
