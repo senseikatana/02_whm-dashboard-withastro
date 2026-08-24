@@ -196,7 +196,7 @@ function DashboardShell({
 				/>
 
 				<div className="flex-1 overflow-y-auto p-4 pb-24 md:p-8 md:pb-8">
-					{view === 'dashboard' && <DashboardView collections={collections} />}
+					{view === 'dashboard' && <DashboardView collections={collections} canAi={can('ai')} />}
 					{view === 'picking' && (
 						<AdvancedPickingView
 							outOrders={collections.outOrders.docs}
@@ -215,8 +215,8 @@ function DashboardShell({
 							fields={schemas[crudKey]}
 							canInjectMock={canInjectMock}
 							onInjectMock={injectMock}
-							canEdit={can(`edit:${crudKey}` as Capability)}
-							canDelete={can(`edit:${crudKey}` as Capability)}
+							canEdit={can((crudKey === 'users' ? 'manage:users' : `edit:${crudKey}`) as Capability)}
+							canDelete={can((crudKey === 'users' ? 'manage:users' : `edit:${crudKey}`) as Capability)}
 						/>
 					)}
 				</div>

@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type KeyboardEvent } from 'react';
 import {
 	Bot,
 	Loader2,
+	MessageSquare,
 	Mic,
 	MicOff,
 	Send,
@@ -158,9 +159,18 @@ export function KittPanel({ collections }: { collections: CollectionsState }) {
 						>
 							<Send size={16} />
 						</button>
-					</form>
-				</div>
-			)}
-		</div>
+				</form>
+			</div>
+		)}
+
+		<button
+			type="button"
+			onClick={toggleOpen}
+			aria-label={S.kittTitle}
+			className="flex h-14 w-14 items-center justify-center rounded-full bg-indigo-600 text-white shadow-xl transition hover:bg-indigo-700"
+		>
+			<MessageSquare size={24} />
+		</button>
+	</div>
 	);
 }
