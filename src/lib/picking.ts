@@ -2,31 +2,23 @@ import type { Doc } from '../types';
 
 export interface PickingTask {
 	id: string;
-	zone: string;
-	product: string;
+	orderRef: string;
+	client: string;
 	qty: number;
 	type: string;
-	destination: string;
 }
 
-const ZONES = ['A', 'B', 'C', 'D'] as const;
-
-export function buildPickingTasks(outOrders: Doc[], inventory: Doc[]): PickingTask[] {
-	const candidates = outOrders.filter(
-		(order) => order.status === 'Pendiente' || order.status === 'Cross-Docking',
-	);
-
-	return candidates
-		.map((order, index) => {
-			const product = inventory[index % Math.max(1, inventory.length)];
-			return {
-				id: `TASK-${1000 + index}`,
-				zone: `Pasillo ${ZONES[index % ZONES.length]}`,
-				product: String(product?.name ?? order.orderRef ?? order.client ?? 'Producto'),
-				qty: Number(order.items) || 0,
-				type: order.type === 'Cross-Docking' ? 'Cross-Docking' : 'Estándar',
-				destination: String(order.client ?? ''),
-			};
-		})
-		.sort((a, b) => a.zone.localeCompare(b.zone));
+// Tareas de picking REALES: pedidos de salida pendientes de preparar.
+// Nada de datos inventados — solo lo que hay en el almacén.
+export function buildPickingTasks(outOrders: Doc[]): PickingTask[] {
+	return outOrders
+		.filter((order) => order.status === 'Pendiente')
+		.map((order) => ({
+			id: String(order.id ?? ''),
+			orderRef: String(order.orderRef ?? ''),
+			client: String(order.client ?? ''),
+			qty: Number(order.items) || 0,
+			type: String(order.type ?? 'Estándar'),
+		}))
+		.sort((a, b) => a.orderRef.localeCompare(b.orderRef));
 }

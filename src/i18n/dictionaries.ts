@@ -15,7 +15,8 @@ const es = {
 	loginPassword: 'Contraseña',
 	loginButton: 'Iniciar sesión',
 	invalidCredentials: 'Email o contraseña incorrectos.',
-	authBySupabase: 'Autenticación segura con Supabase',
+	authByInsForge: 'Autenticación segura con InsForge',
+	oauthContinue: (provider: string) => `Continuar con ${provider}`,
 	registerTitle: 'Crear cuenta',
 	registerName: 'Nombre',
 	registerRole: 'Rol',
@@ -104,7 +105,9 @@ const es = {
 	validationMin: (label: string, min: number) => `${label} no puede ser menor que ${min}.`,
 
 	pickingTitle: 'Operativa de Picking',
-	pickingSubtitle: 'Zone Picking y Cross-Docking optimizado.',
+	pickingSubtitle: 'Pedidos pendientes de preparar en el almacén.',
+	pendingOrders: 'pedidos pendientes',
+	pickingComplete: 'Completar picking',
 	voiceStart: 'Voice Picking',
 	voiceStop: 'Detener Voz',
 	noTasks: 'Sin tareas de picking pendientes.',
@@ -112,8 +115,8 @@ const es = {
 	zone: 'Zona:',
 	destination: 'Destino:',
 	pickingDone: 'Picking finalizado.',
-	pickingInstruction: (zone: string, qty: number, product: string) =>
-		`Atención. Zona ${zone}. Recoger ${qty} unidades de ${product}.`,
+	pickingInstruction: (orderRef: string, client: string, qty: number) =>
+		`Pedido ${orderRef} para ${client}. Recoger ${qty} unidades.`,
 	voiceUnsupported: 'Voice Picking no soportado en este navegador.',
 
 	messagingTitle: 'Centro de Mensajería',
@@ -209,7 +212,8 @@ export const en: StringsDict = {
 	loginPassword: 'Password',
 	loginButton: 'Sign in',
 	invalidCredentials: 'Incorrect email or password.',
-	authBySupabase: 'Secure authentication with Supabase',
+	authByInsForge: 'Secure authentication with InsForge',
+	oauthContinue: (provider: string) => `Continue with ${provider}`,
 	registerTitle: 'Create account',
 	registerName: 'Name',
 	registerRole: 'Role',
@@ -298,7 +302,9 @@ export const en: StringsDict = {
 	validationMin: (label: string, min: number) => `${label} cannot be less than ${min}.`,
 
 	pickingTitle: 'Picking Operations',
-	pickingSubtitle: 'Optimized zone picking and cross-docking.',
+	pickingSubtitle: 'Orders pending to be picked in the warehouse.',
+	pendingOrders: 'pending orders',
+	pickingComplete: 'Complete picking',
 	voiceStart: 'Voice Picking',
 	voiceStop: 'Stop Voice',
 	noTasks: 'No pending picking tasks.',
@@ -306,8 +312,8 @@ export const en: StringsDict = {
 	zone: 'Zone:',
 	destination: 'Destination:',
 	pickingDone: 'Picking finished.',
-	pickingInstruction: (zone: string, qty: number, product: string) =>
-		`Attention. Zone ${zone}. Pick ${qty} units of ${product}.`,
+	pickingInstruction: (orderRef: string, client: string, qty: number) =>
+		`Order ${orderRef} for ${client}. Pick ${qty} units.`,
 	voiceUnsupported: 'Voice Picking not supported in this browser.',
 
 	messagingTitle: 'Messaging Center',
@@ -401,7 +407,8 @@ export const ca: StringsDict = {
 	loginPassword: 'Contrasenya',
 	loginButton: 'Inicia sessió',
 	invalidCredentials: 'Email o contrasenya incorrectes.',
-	authBySupabase: 'Autenticació segura amb Supabase',
+	authByInsForge: 'Autenticació segura amb InsForge',
+	oauthContinue: (provider: string) => `Continua amb ${provider}`,
 	registerTitle: 'Crea un compte',
 	registerName: 'Nom',
 	registerRole: 'Rol',
@@ -490,7 +497,9 @@ export const ca: StringsDict = {
 	validationMin: (label: string, min: number) => `${label} no pot ser menor que ${min}.`,
 
 	pickingTitle: 'Operativa de Picking',
-	pickingSubtitle: 'Zone Picking i Cross-Docking optimitzat.',
+	pickingSubtitle: 'Comandes pendents de preparar al magatzem.',
+	pendingOrders: 'comandes pendents',
+	pickingComplete: 'Completa el picking',
 	voiceStart: 'Voice Picking',
 	voiceStop: 'Atura la veu',
 	noTasks: 'No hi ha tasques de picking pendents.',
@@ -498,8 +507,8 @@ export const ca: StringsDict = {
 	zone: 'Zona:',
 	destination: 'Destinació:',
 	pickingDone: 'Picking finalitzat.',
-	pickingInstruction: (zone: string, qty: number, product: string) =>
-		`Atenció. Zona ${zone}. Recull ${qty} unitats de ${product}.`,
+	pickingInstruction: (orderRef: string, client: string, qty: number) =>
+		`Comanda ${orderRef} per a ${client}. Recull ${qty} unitats.`,
 	voiceUnsupported: 'Voice Picking no compatible amb aquest navegador.',
 
 	messagingTitle: 'Centre de Missatgeria',
@@ -593,7 +602,8 @@ export const fr: StringsDict = {
 	loginPassword: 'Mot de passe',
 	loginButton: 'Se connecter',
 	invalidCredentials: 'Email ou mot de passe incorrects.',
-	authBySupabase: 'Authentification sécurisée avec Supabase',
+	authByInsForge: 'Authentification sécurisée avec InsForge',
+	oauthContinue: (provider: string) => `Continuer avec ${provider}`,
 	registerTitle: 'Créer un compte',
 	registerName: 'Nom',
 	registerRole: 'Rôle',
@@ -683,7 +693,9 @@ export const fr: StringsDict = {
 	validationMin: (label: string, min: number) => `${label} ne peut pas être inférieur à ${min}.`,
 
 	pickingTitle: 'Préparation des commandes',
-	pickingSubtitle: 'Zone Picking et Cross-Docking optimisés.',
+	pickingSubtitle: "Commandes en attente de préparation à l'entrepôt.",
+	pendingOrders: 'commandes en attente',
+	pickingComplete: 'Terminer la préparation',
 	voiceStart: 'Préparation vocale',
 	voiceStop: 'Arrêter la voix',
 	noTasks: 'Aucune tâche de préparation en attente.',
@@ -691,8 +703,8 @@ export const fr: StringsDict = {
 	zone: 'Zone :',
 	destination: 'Destination :',
 	pickingDone: 'Préparation terminée.',
-	pickingInstruction: (zone: string, qty: number, product: string) =>
-		`Attention. Zone ${zone}. Prélever ${qty} unités de ${product}.`,
+	pickingInstruction: (orderRef: string, client: string, qty: number) =>
+		`Commande ${orderRef} pour ${client}. Prélever ${qty} unités.`,
 	voiceUnsupported: 'Préparation vocale non prise en charge par ce navigateur.',
 
 	messagingTitle: 'Centre de messagerie',

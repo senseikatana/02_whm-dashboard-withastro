@@ -10,9 +10,11 @@ interface LoginScreenProps {
 	roles: RoleDef[];
 	loading: boolean;
 	authMode: AuthMode;
+	initialMode?: 'login' | 'register';
 	onSelect: (operator: Operator) => void;
 	onSignInWithPassword: (email: string, password: string) => Promise<string | null>;
 	onRegister: (input: RegisterInput) => Promise<{ error: string | null; needsConfirmation: boolean }>;
+	onSignInWithOAuth?: (provider: string) => Promise<string | null>;
 }
 
 const DEMO_OPERATOR: Doc = { id: 'demo', name: 'Demo', role: 'Admin' };
@@ -22,12 +24,14 @@ export function LoginScreen({
 	roles,
 	loading,
 	authMode,
+	initialMode,
 	onSelect,
 	onSignInWithPassword,
 	onRegister,
+	onSignInWithOAuth,
 }: LoginScreenProps) {
 	const { S } = useI18n();
-	const [mode, setMode] = useState<'login' | 'register'>('login');
+	const [mode, setMode] = useState<'login' | 'register'>(initialMode ?? 'login');
 	const [selected, setSelected] = useState<string | null>(null);
 	const [email, setEmail] = useState('');
 	const [password, setPassword] = useState('');
@@ -36,6 +40,11 @@ export function LoginScreen({
 	const [signingIn, setSigningIn] = useState(false);
 	const [error, setError] = useState<string | null>(null);
 	const [notice, setNotice] = useState<string | null>(null);
+
+	const oauthProviders = (import.meta.env.PUBLIC_AUTH_OAUTH_PROVIDERS ?? '')
+		.split(',')
+		.map((provider) => provider.trim())
+		.filter(Boolean);
 
 	const list = operators.length > 0 ? operators : [DEMO_OPERATOR];
 	const effectiveSelected = selected ?? list[0]?.id;
@@ -99,7 +108,7 @@ export function LoginScreen({
 					</div>
 				</div>
 
-				{authMode === 'supabase' ? (
+				{authMode === 'insforge' ? (
 					mode === 'login' ? (
 						<>
 							<h2 className="text-2xl font-extrabold text-gray-900 dark:text-white">{S.loginTitle}</h2>
@@ -146,6 +155,25 @@ export function LoginScreen({
 									{S.loginButton}
 								</button>
 							</form>
+
+							{onSignInWithOAuth && oauthProviders.length > 0 && (
+								<div className="mt-4 space-y-2">
+									{oauthProviders.map((provider) => (
+										<button
+											key={provider}
+											type="button"
+											onClick={async () => {
+												setError(null);
+												const message = await onSignInWithOAuth(provider);
+												if (message) setError(message);
+											}}
+											className="flex w-full items-center justify-center gap-2 rounded-xl border border-gray-300 bg-white py-3 text-sm font-semibold text-gray-700 transition hover:bg-gray-50 dark:border-slate-700 dark:bg-slate-800 dark:text-gray-200 dark:hover:bg-slate-700"
+										>
+											{S.oauthContinue(provider)}
+										</button>
+									))}
+								</div>
+							)}
 						</>
 					) : (
 						<>
@@ -280,7 +308,7 @@ export function LoginScreen({
 					</>
 				)}
 
-				{authMode === 'supabase' && (
+				{authMode === 'insforge' && (
 					<button
 						type="button"
 						onClick={toggleMode}
@@ -292,7 +320,7 @@ export function LoginScreen({
 
 				<p className="mt-4 flex items-center justify-center gap-1.5 text-center text-[11px] text-gray-400 dark:text-slate-500">
 					<ShieldCheck size={14} />
-					{authMode === 'supabase' ? S.authBySupabase : S.loginDemo}
+					{authMode === 'insforge' ? S.authByInsForge : S.loginDemo}
 				</p>
 			</div>
 		</div>

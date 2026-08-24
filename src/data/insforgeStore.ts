@@ -130,9 +130,17 @@ class InsForgeStore implements AppStore {
 	async create(col: CollectionKey, data: Record<string, unknown>): Promise<string> {
 		await this.ready;
 		const doc: Doc = { id: crypto.randomUUID(), ...data, createdAt: Date.now() };
-		await this.insertMany(col, [doc]);
-		this.cache.set(col, [...(this.cache.get(col) ?? []), doc]);
+		// Optimista: refleja el cambio al instante y sincroniza en segundo plano.
+		const previous = this.cache.get(col) ?? [];
+		this.cache.set(col, [...previous, doc]);
 		this.notify(col);
+		try {
+			await this.insertMany(col, [doc]);
+		} catch (error) {
+			this.cache.set(col, previous);
+			this.notify(col);
+			throw error;
+		}
 		return doc.id;
 	}
 
@@ -141,61 +149,90 @@ class InsForgeStore implements AppStore {
 		await this.ready;
 		const createdAt = Date.now();
 		const docs: Doc[] = items.map((item) => ({ id: crypto.randomUUID(), ...item, createdAt }));
-		await this.insertMany(col, docs);
-		this.cache.set(col, [...(this.cache.get(col) ?? []), ...docs]);
+		const previous = this.cache.get(col) ?? [];
+		this.cache.set(col, [...previous, ...docs]);
 		this.notify(col);
+		try {
+			await this.insertMany(col, docs);
+		} catch (error) {
+			this.cache.set(col, previous);
+			this.notify(col);
+			throw error;
+		}
 	}
 
 	async update(col: CollectionKey, id: string, data: Record<string, unknown>): Promise<void> {
 		await this.ready;
-		const current = (this.cache.get(col) ?? []).find((doc) => doc.id === id);
+		const previous = this.cache.get(col) ?? [];
+		const current = previous.find((doc) => doc.id === id);
 		const next: Doc = { ...current, ...data, id };
-		const insforge = getInsForge();
-		const { error } = await insforge.database
-			.from(TABLE)
-			.update({ data: next, updated_at: Date.now() })
-			.eq('collection', col)
-			.eq('id', id);
-		if (error) throw new Error(`InsForge update ${col}: ${JSON.stringify(error)}`);
 		this.cache.set(
 			col,
-			(this.cache.get(col) ?? []).map((doc) => (doc.id === id ? next : doc)),
+			previous.map((doc) => (doc.id === id ? next : doc)),
 		);
 		this.notify(col);
+		try {
+			const insforge = getInsForge();
+			const { error } = await insforge.database
+				.from(TABLE)
+				.update({ data: next, updated_at: Date.now() })
+				.eq('collection', col)
+				.eq('id', id);
+			if (error) throw new Error(`InsForge update ${col}: ${JSON.stringify(error)}`);
+		} catch (error) {
+			this.cache.set(col, previous);
+			this.notify(col);
+			throw error;
+		}
 	}
 
 	async remove(col: CollectionKey, id: string): Promise<void> {
 		await this.ready;
-		const insforge = getInsForge();
-		const { error } = await insforge.database
-			.from(TABLE)
-			.delete()
-			.eq('collection', col)
-			.eq('id', id);
-		if (error) throw new Error(`InsForge delete ${col}: ${JSON.stringify(error)}`);
+		const previous = this.cache.get(col) ?? [];
 		this.cache.set(
 			col,
-			(this.cache.get(col) ?? []).filter((doc) => doc.id !== id),
+			previous.filter((doc) => doc.id !== id),
 		);
 		this.notify(col);
-	}
-
-	async batchDelete(col: CollectionKey, ids: string[]): Promise<void> {
-		await this.ready;
-		const insforge = getInsForge();
-		for (const id of ids) {
+		try {
+			const insforge = getInsForge();
 			const { error } = await insforge.database
 				.from(TABLE)
 				.delete()
 				.eq('collection', col)
 				.eq('id', id);
 			if (error) throw new Error(`InsForge delete ${col}: ${JSON.stringify(error)}`);
+		} catch (error) {
+			this.cache.set(col, previous);
+			this.notify(col);
+			throw error;
 		}
+	}
+
+	async batchDelete(col: CollectionKey, ids: string[]): Promise<void> {
+		if (ids.length === 0) return;
+		await this.ready;
 		const toDelete = new Set(ids);
+		const previous = this.cache.get(col) ?? [];
 		this.cache.set(
 			col,
-			(this.cache.get(col) ?? []).filter((doc) => !toDelete.has(doc.id)),
+			previous.filter((doc) => !toDelete.has(doc.id)),
 		);
 		this.notify(col);
+		try {
+			const insforge = getInsForge();
+			for (const id of ids) {
+				const { error } = await insforge.database
+					.from(TABLE)
+					.delete()
+					.eq('collection', col)
+					.eq('id', id);
+				if (error) throw new Error(`InsForge delete ${col}: ${JSON.stringify(error)}`);
+			}
+		} catch (error) {
+			this.cache.set(col, previous);
+			this.notify(col);
+			throw error;
+		}
 	}
 }

@@ -8,7 +8,7 @@ import {
 	type ChatMessage,
 	type MessagingChannel,
 } from '../lib/messaging';
-import { getSessionToken } from '../lib/supabase';
+import { getSessionToken } from '../lib/session';
 
 const MESSAGES_STORE = 'messages';
 const API_BASE: string = import.meta.env.PUBLIC_API_BASE ?? 'http://localhost:8787';

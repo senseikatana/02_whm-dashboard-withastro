@@ -1,4 +1,4 @@
-import { getSessionToken } from './supabase';
+import { getSessionToken } from './session';
 
 export interface KittMessage {
 	role: 'user' | 'assistant';

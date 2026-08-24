@@ -53,6 +53,7 @@ interface DashboardShellProps {
 	signIn: (operator: Operator) => void;
 	signInWithPassword: (email: string, password: string) => Promise<string | null>;
 	register: (input: RegisterInput) => Promise<{ error: string | null; needsConfirmation: boolean }>;
+	signInWithOAuth: (provider: string) => Promise<string | null>;
 	signOut: () => void;
 }
 
@@ -62,6 +63,7 @@ function DashboardShell({
 	signIn,
 	signInWithPassword,
 	register,
+	signInWithOAuth,
 	signOut,
 }: DashboardShellProps) {
 	const { S } = useI18n();
@@ -140,10 +142,11 @@ function DashboardShell({
 				roles={roles}
 				loading={collections.users.loading}
 				authMode={authMode}
-				onSelect={signIn}
-				onSignInWithPassword={signInWithPassword}
-				onRegister={register}
-			/>
+					onSelect={signIn}
+					onSignInWithPassword={signInWithPassword}
+					onRegister={register}
+					onSignInWithOAuth={signInWithOAuth}
+				/>
 		);
 	}
 
@@ -193,7 +196,7 @@ function DashboardShell({
 				/>
 
 				<div className="flex-1 overflow-y-auto p-4 pb-24 md:p-8 md:pb-8">
-					{view === 'dashboard' && <DashboardView collections={collections} canAi={can('ai')} />}
+					{view === 'dashboard' && <DashboardView collections={collections} />}
 					{view === 'picking' && (
 						<AdvancedPickingView
 							outOrders={collections.outOrders.docs}
@@ -232,7 +235,8 @@ function DashboardShell({
 }
 
 export default function App() {
-	const { status, authMode, session, signIn, signInWithPassword, register, signOut } = useAuth();
+	const { status, authMode, session, signIn, signInWithPassword, register, signInWithOAuth, signOut } =
+		useAuth();
 
 	return (
 		<LocaleProvider>
@@ -247,6 +251,7 @@ export default function App() {
 							signIn={signIn}
 							signInWithPassword={signInWithPassword}
 							register={register}
+							signInWithOAuth={signInWithOAuth}
 							signOut={signOut}
 						/>
 					)}

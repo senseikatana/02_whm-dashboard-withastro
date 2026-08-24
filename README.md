@@ -1,139 +1,151 @@
-# ESINSA WMS System (Warehouse Management System)
+# ESINSA WMS — Warehouse Management System
 
-## Overview
-A custom Warehouse Management System (WMS) built for **Esinsa Gaskets** (Tarragona, Spain).
-This system streamlines inventory management, generates unique NUT codes, manages warehouse locations (racks & levels), and prints A4 labels with barcodes. It replaces manual Excel-based operations with a robust, server-side Node.js solution optimized for industrial environments.
+Sistema de gestión de almacén para **Esinsa Gaskets** (Pol. Ind. Riu Clar, Tarragona).
+Intranet para empleados y operarios: inventario con códigos NUT, pedidos, picking con voz, trazabilidad de movimientos y asistente IA.
 
 ## Tech Stack
-- **Framework**: Astro (Server-Side Rendering via Node.js Adapter).
-- **ORM**: Drizzle (SQLite for fast, lightweight local data persistence).
-- **Validation**: Zod (for strict runtime type safety).
-- **Cloud Integration**: Google Sheets API (for master data management and legacy Excel synchronization).
-- **PDF Generation**: `@react-pdf/renderer` & `bwip-js` (generate A4 labels with Code128 barcodes directly on the server).
-- **Authentication**: Auth.js (`@auth/core`) + Drizzle Adapter (OAuth 2.0 / OpenID Connect).
-- **UI & UX**: Built-in Theme Switcher (Dark/Light) and Native i18n Multi-language support (Spanish, English, Catalan).
-- **Design Principles**: SOLID Architecture (Single Responsibility, Open/Closed, Liskov Substitution, Interface Segregation, Dependency Inversion).
 
-## Core Features
-1.  **Unique Material Code Generation (NUT):**
-    *   Automatically generates `NUTxxxxxxxx` codes.
-    *   Fills gaps in the sequence (e.g., if `NUT0004002` is deleted, the system will reuse `0004002`).
-    *   Configurable padding and start numbers.
-2.  **Warehouse Location Management:**
-    *   Manages physical storage racks using a standard nomenclature: `[Aisle]-[Rack]-[Level]-[Position]` (e.g., `A-3-02-2`).
-    *   Enforces Esinsa's specific height constraints (Levels must be between 0 and 6).
-    *   Links products to specific physical locations.
-3.  **A4 Label Printing:**
-    *   Generates a downloadable PDF on demand.
-    *   Includes the NUT code, Rack location code, and a high-resolution Code128 barcode.
-    *   Requires no MS Office/Excel to print; opens directly in Adobe Reader/Microsoft Edge.
-4.  **Bidirectional Google Sheets Sync:**
-    *   **Export:** Push all products from the local Drizzle database to a Google Sheet.
-    *   **Import:** Read a Google Sheet (e.g., where the boss manages master lists) and update the local database.
-    *   Smart Import: If a row lacks a `NUT Code`, the system auto-generates one (`generateNutCode()`).
-5.  **Inventory Movements (Traceability):**
-    *   Tracks every stock change (Reception, Picking, Transfers).
-    *   Stores historical logs to audit warehouse activity.
-6.  **Product Catalog:**
-    *   Stores product descriptions, categories (Juntas, Tornillería), sub-categories (Metálicas, Hexagonales), and manufacturer brands (e.g., novus - a Flexitallic brand).
-7.  **Authentication & Authorization (OAuth):**
-    *   Securely manages warehouse staff access via OAuth (Google, GitHub, or custom providers).
-    *   Session persistence using Drizzle database tables.
-    *   Role-based middleware protection to secure all internal API endpoints.
-8.  **Theme Switcher (Dark/Light Mode):**
-    *   Fully responsive UI with a built-in toggle to switch between Dark Mode and Light Mode.
-    *   Persistent preference saved in the user's browser `localStorage`.
-9.  **Multi-Language Support (i18n):**
-    *   Built-in internationalization (Spanish, English, Catalan).
-    *   URL-based language routing (e.g., `/es/dashboard`, `/en/dashboard`, `/ca/dashboard`).
-    *   Translates all UI components, labels, and A4 PDF headers dynamically based on the selected locale.
+- **Frontend**: Astro 7 + React 19 + Tailwind CSS v4 + Zustand
+- **Backend**: InsForge (Postgres + Auth + Realtime en la nube)
+- **IA**: MiMo v2.5 (Xiaomi) vía API OpenAI-compatible
+- **i18n**: Español, Inglés, Catalán, Francés
+- **Persistencia**: InsForge Postgres (compartido entre todos los navegadores)
+- **Auth**: InsForge Auth (email/password + OAuth) con roles (admin, manager, picker, formador, prácticas)
 
-## Directory Structure
+## Desarrollo local
 
-
-
-```shell
-
-├── public/ # Static assets (favicon, images, fonts)
-│ └── locales/ # (Optional) Additional static i18n assets
-├── src/
-│ ├── components/ # Reusable UI components (ThemeToggle, Header, etc.)
-│ ├── layouts/ # Astro layout components (MainLayout, etc.)
-│ ├── pages/ # Application pages and API endpoints
-│ │ ├── api/ # Server-Side API Routes
-│ │ │ ├── print-a4.ts # POST: Returns A4 PDF
-│ │ │ ├── sync-sheets.ts # POST: Syncs Google Sheets with DB
-│ │ │ ├── products.ts # CRUD endpoints for master products
-│ │ │ ├── locations.ts # CRUD endpoints for warehouse racks
-│ │ │ └── auth/ # OAuth endpoints (callback, signin, signout)
-│ │ ├── [lang]/ # i18n dynamic route
-│ │ │ ├── dashboard.astro # Protected main dashboard
-│ │ │ └── api/ # (Optional) i18n protected APIs
-│ │ └── index.astro # Landing page (Sign-in/out)
-│ ├── lib/ # Pure utilities, validations, and helpers
-│ │ ├── validations.ts # Zod schemas
-│ │ ├── nut-generator.ts # Generates unique NUT codes
-│ │ ├── google-sheets.ts # Authenticated Google API client
-│ │ └── auth.ts # Auth.js configuration (Providers & Adapter)
-│ ├── services/ # Business logic layer (SOLID)
-│ │ ├── sheet-sync.service.ts
-│ │ ├── pdf-generator.service.ts
-│ │ └── location.service.ts
-│ ├── db/ # Database client and schemas
-│ │ ├── index.ts # Drizzle client initialization
-│ │ └── schema.ts # Tables, relationships & Drizzle ORM definitions
-│ ├── i18n/ # Translation files
-│ │ ├── config.ts # i18n configuration (locales, default)
-│ │ └── locales/ # Dictionary files
-│ │ ├── es.json # Spanish translations
-│ │ ├── en.json # English translations
-│ │ └── ca.json # Catalan translations
-│ ├── styles/ # Global CSS with CSS variables for theming
-│ │ ├── global.css # Tailwind or base CSS
-│ │ └── theme.css # Dark & Light mode variable definitions
-│ └── middleware.ts # Astro middleware (Handles Auth sessions & i18n routing)
-├── drizzle.config.ts # Drizzle migrations and schema config
-├── astro.config.mjs # Astro framework configuration (Adapter, i18n)
-├── .env.local # Environment variables (Google keys, Auth secrets)
-└── package.json # Project dependencies
-
+```bash
+bun install
+bun run dev          # http://localhost:4321
+bun run check        # typecheck frontend
+bun run build        # build estático de producción
 ```
 
-## Folder Structure:
+## Variables de entorno
+
+Copiar `.env.example` a `.env` y rellenar (los valores se encuentran en `.insforge/project.json` y en los paneles de cada servicio):
+
+| Variable | Descripción |
+|---|---|
+| `PUBLIC_INSFORGE_URL` | URL del proyecto InsForge |
+| `PUBLIC_INSFORGE_ANON_KEY` | Anon key de InsForge (`npx -y @insforge/cli secrets get ANON_KEY`) |
+| `PUBLIC_AI_ENDPOINT` | Endpoint de IA OpenAI-compatible |
+| `PUBLIC_AI_KEY` | API key del proveedor de IA |
+| `PUBLIC_AI_MODEL` | Modelo de IA (ej. `mimo-v2.5`) |
+
+> **Importante:** Estas variables se incrustan en el bundle en **tiempo de build**. En Netlify/Cloudflare se configuran como Environment variables **antes** del primer build. Nunca commitear `.env` al repositorio.
+
+---
+
+## Despliegue en Cloudflare Pages (con tu dominio)
+
+### Paso 1 — Build local
+
+```bash
+bun install
+bun run build
+```
+
+Esto genera la carpeta `dist/` con el sitio estático.
+
+### Paso 2 — Crear el proyecto en Cloudflare
+
+1. Entra en [dash.cloudflare.com](https://dash.cloudflare.com) → **Workers & Pages** → **Create** → **Pages** → **Upload assets**.
+2. Nombre del proyecto: `whm-esinsa` (o el que prefieras).
+3. Sube la carpeta `dist/` arrastrándola o seleccionándola.
+4. Haz clic en **Deploy site**.
+
+### Paso 3 — Asociar tu dominio
+
+1. Dentro del proyecto de Pages → **Custom domains** → **Set up a custom domain**.
+2. Escribe el dominio que tienes en Cloudflare (ej. `whm.tudominio.com`).
+3. Como el dominio ya está en tu cuenta de Cloudflare, **el registro DNS (CNAME) se configura automáticamente**. Solo acepta.
+4. El SSL se provisiona solo en unos minutos.
+
+### Paso 4 — Variables de entorno (para builds automáticos)
+
+Si conectas el repo de GitHub en vez de subir `dist/` manualmente:
+
+1. En el proyecto Pages → **Settings** → **Environment variables**.
+2. Añade las 5 variables de la tabla de arriba (tanto para Production como Preview).
+3. Configura: **Build command** = `bun install && bun run build` · **Output directory** = `dist`.
+4. Cada push al repo hará un deploy automático.
+
+### Paso 5 — Redirecciones SPA
+
+Cloudflare Pages necesita un `_redirects` para que `/login`, `/register` y `/auth/callback` funcionen al navegar directamente. El archivo ya está incluido en `dist/_redirects` (Astro lo genera). Si necesitas añadir más rutas, crea `public/_redirects`:
 
 ```
-src/
-├── types/
-│   └── index.ts
-├── lib/
-│   ├── validations.ts
-│   ├── nut-generator.ts
-│   └── google-sheets.ts
-├── db/
-│   ├── index.ts       # Instancia de Drizzle (ej. `better-sqlite3`)
-│   └── schema.ts
-├── services/
-│   ├── sheet-sync.service.ts
-│   └── pdf-generator.service.ts
-└── pages/
-    └── api/            # <--- Aquí van los endpoints en Astro
-        ├── print-a4.ts
-        └── sync-sheets.ts
+/login    /login    200
+/register /register 200
+/auth/callback  /auth/callback  200
 ```
 
 ---
 
-## Setup & Installation
-1.  **Clone the repo & install dependencies:**
-    `bun install`
-2.  **Environment Variables** (Create `.env.local`):
-    - `GOOGLE_SHEETS_CLIENT_EMAIL`
-    - `GOOGLE_SHEETS_PRIVATE_KEY`
-    - `SHEET_ID`
-    - `AUTH_SECRET` (Required for Auth.js)
-    - `AUTH_GOOGLE_ID` (If using Google OAuth)
-    - `AUTH_GOOGLE_SECRET` (If using Google OAuth)
-3.  **Run database migrations:**
-    `bunx drizzle-kit push`
-4.  **Run development server:**
-    `bun run dev`
+## Despliegue en Netlify
+
+### Opción A — Drag & drop (para probar rápido)
+
+1. Entra en [app.netlify.com](https://app.netlify.com) → **Add new site** → **Deploy manually**.
+2. Arrastra la carpeta `dist/` al área de subida.
+3. El sitio se publica en segundos con una URL tipo `https://random-name.netlify.app`.
+4. En **Site settings** → **Change site name** para ponerle un nombre más corto.
+
+> Las variables `PUBLIC_*` ya están incrustadas en el bundle (se definen en tiempo de build, no en el panel de Netlify). Si necesitas cambiarlas, haz un build nuevo localmente y vuelve a arrastrar `dist/`.
+
+### Opción B — Conectando GitHub (deploys automáticos)
+
+1. En Netlify → **Add new site** → **Import an existing project** → elige GitHub.
+2. Selecciona el repositorio del proyecto.
+3. Configuración del build:
+   - **Build command:** `bun install && bun run build`
+   - **Publish directory:** `dist`
+4. En **Site settings** → **Environment variables**, añade las 5 variables de la tabla de arriba **antes** del primer build.
+5. Haz clic en **Deploy site**. Cada push al repo desplegará automáticamente.
+
+### Dominio personalizado en Netlify
+
+1. En **Site settings** → **Domain management** → **Add custom domain**.
+2. Escribe tu dominio (ej. `whm.tudominio.com`).
+3. Netlify te dará un registro DNS (CNAME o A). Añádelo en tu proveedor de DNS (Cloudflare, etc.).
+4. Activa HTTPS (Let's Encrypt) desde el panel de Netlify — se provisiona solo.
+
+---
+
+## Estructura del proyecto
+
+```
+src/
+├── auth/roles.ts          # Modelo de capacidades y roles
+├── components/dashboard/  # Vistas React (App, CrudView, Picking, Login...)
+├── data/                  # Store (InsForge + fallback local), schemas, seed
+├── hooks/                 # useAuth, useCollections, useFilters, useRoles...
+├── i18n/                  # Diccionarios (es/en/ca/fr) + LocaleProvider
+├── lib/                   # ai.ts, insforge.ts, picking.ts, csv.ts, idb.ts...
+├── pages/                 # index.astro, login.astro, register.astro, auth/callback.astro
+├── store/                 # Zustand store (appStore.ts)
+├── styles/                # global.css (Tailwind + daisyUI)
+└── types/                 # Tipos TypeScript del dominio
+seed/
+├── seed-insforge.ts       # Script para subir datos de ejemplo a InsForge
+└── csv/                   # CSVs generados (inventory, orders, routes, crm)
+```
+
+## Roles y permisos
+
+| Rol | Acceso |
+|---|---|
+| **admin** | Todo (dashboard, inventario, pedidos, picking, usuarios, roles, IA) |
+| **manager** | Todo excepto gestión de usuarios y roles |
+| **picker** | Inventario, picking, pedidos (lectura) |
+| **formador** | Lectura global + picking + mensajería |
+| **prácticas** | Dashboard, inventario, picking (lectura) |
+
+## Seed de datos de ejemplo
+
+```bash
+bun run seed/seed-insforge.ts
+```
+
+Sube 48 registros de ejemplo (29 SKU con códigos NUT, recepciones, pedidos, rutas, CRM) a InsForge y genera CSVs en `seed/csv/`.

@@ -1,8 +1,9 @@
 import { useMemo, useRef, useState } from 'react';
-import { ListChecks, Mic, MicOff, Volume2 } from 'lucide-react';
+import { CheckCircle2, ListChecks, Mic, MicOff, Package } from 'lucide-react';
 import { useI18n } from '../../i18n/LocaleProvider';
-import { LOCALE_TO_LANG } from '../../lib/voice';
+import { getStore } from '../../data/store';
 import { buildPickingTasks } from '../../lib/picking';
+import { LOCALE_TO_LANG } from '../../lib/voice';
 import type { Doc } from '../../types';
 import { useToast } from './Toast';
 
@@ -11,14 +12,29 @@ interface AdvancedPickingViewProps {
 	inventory: Doc[];
 }
 
-export function AdvancedPickingView({ outOrders, inventory }: AdvancedPickingViewProps) {
+export function AdvancedPickingView({ outOrders }: AdvancedPickingViewProps) {
 	const { S, locale } = useI18n();
 	const toast = useToast();
+	const store = getStore();
 	const [speaking, setSpeaking] = useState(false);
+	const [busyId, setBusyId] = useState<string | null>(null);
 	const speech = useRef<SpeechSynthesis | null>(null);
 
-	const tasks = useMemo(() => buildPickingTasks(outOrders, inventory), [outOrders, inventory]);
+	const tasks = useMemo(() => buildPickingTasks(outOrders), [outOrders]);
 	const lang = LOCALE_TO_LANG[locale] ?? 'es-ES';
+
+	const completeTask = async (taskId: string) => {
+		if (busyId) return;
+		setBusyId(taskId);
+		try {
+			await store.update('outOrders', taskId, { status: 'Empacando' });
+			toast(S.pickingDone, 'success');
+		} catch {
+			toast(S.errorOp, 'error');
+		} finally {
+			setBusyId(null);
+		}
+	};
 
 	const speakSequence = (index: number) => {
 		if (!speech.current) return;
@@ -31,7 +47,7 @@ export function AdvancedPickingView({ outOrders, inventory }: AdvancedPickingVie
 		}
 		const task = tasks[index];
 		const utterance = new SpeechSynthesisUtterance(
-			S.pickingInstruction(task.zone, task.qty, task.product),
+			S.pickingInstruction(task.orderRef, task.client, task.qty),
 		);
 		utterance.lang = lang;
 		utterance.onend = () => speakSequence(index + 1);
@@ -65,7 +81,9 @@ export function AdvancedPickingView({ outOrders, inventory }: AdvancedPickingVie
 						<ListChecks className="mr-2 text-indigo-600" />
 						{S.pickingTitle}
 					</h2>
-					<p className="mt-1 text-sm text-gray-500 dark:text-slate-400">{S.pickingSubtitle}</p>
+					<p className="mt-1 text-sm text-gray-500 dark:text-slate-400">
+						{S.pickingSubtitle} · {tasks.length} {S.pendingOrders}
+					</p>
 				</div>
 				<button
 					type="button"
@@ -83,7 +101,7 @@ export function AdvancedPickingView({ outOrders, inventory }: AdvancedPickingVie
 
 			{tasks.length === 0 && (
 				<div className="flex flex-col items-center gap-2 rounded-xl border border-dashed border-gray-300 bg-white p-10 text-gray-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400">
-					<Volume2 size={32} className="text-gray-300 dark:text-slate-700" />
+					<Package size={32} className="text-gray-300 dark:text-slate-700" />
 					<p className="text-sm">{S.noTasks}</p>
 				</div>
 			)}
@@ -104,27 +122,24 @@ export function AdvancedPickingView({ outOrders, inventory }: AdvancedPickingVie
 							>
 								{task.type}
 							</span>
-							<span className="font-mono text-xs text-gray-400 dark:text-slate-500">{task.id}</span>
+							<span className="font-mono text-xs text-gray-400 dark:text-slate-500">{task.orderRef}</span>
 						</div>
-						<h3 className="mb-1 text-lg font-bold text-gray-900 dark:text-white">{task.product}</h3>
+						<h3 className="mb-1 text-lg font-bold text-gray-900 dark:text-white">{task.client}</h3>
 						<div className="mb-4 text-3xl font-black text-indigo-600">
 							{task.qty}{' '}
 							<span className="text-sm font-medium uppercase tracking-wide text-gray-500 dark:text-slate-400">
 								{S.units}
 							</span>
 						</div>
-						<div className="rounded-lg border border-gray-100 bg-gray-50 p-3 text-sm dark:border-slate-800 dark:bg-slate-800/50">
-							<div className="flex justify-between">
-								<span className="text-gray-500 dark:text-slate-400">{S.zone}</span>
-								<span className="font-bold text-gray-900 dark:text-white">{task.zone}</span>
-							</div>
-							{task.destination && (
-								<div className="mt-1 flex justify-between">
-									<span className="text-gray-500 dark:text-slate-400">{S.destination}</span>
-									<span className="font-bold text-gray-900 dark:text-white">{task.destination}</span>
-								</div>
-							)}
-						</div>
+						<button
+							type="button"
+							onClick={() => void completeTask(task.id)}
+							disabled={busyId !== null}
+							className="flex w-full items-center justify-center gap-2 rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-bold text-white transition hover:bg-indigo-700 disabled:opacity-50"
+						>
+							<CheckCircle2 size={16} />
+							{S.pickingComplete}
+						</button>
 					</div>
 				))}
 			</div>
