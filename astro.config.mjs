@@ -4,7 +4,6 @@ import mdx from '@astrojs/mdx';
 import netlify from '@astrojs/netlify';
 import node from '@astrojs/node';
 import react from '@astrojs/react';
-import vercel from '@astrojs/vercel';
 import tailwindcss from '@tailwindcss/vite';
 import { defineConfig } from 'astro/config';
 
@@ -24,7 +23,6 @@ function pickAdapter() {
 		case 'netlify':
 			return netlify();
 		case 'vercel':
-			return vercel();
 		case 'cloudflare':
 			return cloudflare();
 		case 'node':
