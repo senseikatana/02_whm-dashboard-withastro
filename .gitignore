@@ -70,3 +70,8 @@ server/data/
 .roo
 .trae
 .windsurf
+
+# Plataformas de despliegue
+.netlify/
+.vercel/
+.wrangler/

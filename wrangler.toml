@@ -1,0 +1,9 @@
+# Cloudflare Pages / Workers
+# Despliegue estático: bun run build && npx wrangler pages deploy dist
+# Con SSR (@astrojs/cloudflare): ASTRO_ADAPTER=cloudflare bun run build
+name = "whm-esinsa"
+compatibility_date = "2026-08-24"
+
+# Variables de entorno del build (Dashboard de Cloudflare Pages > Settings > Environment variables):
+#   PUBLIC_INSFORGE_URL        (https://TUKEY.ap-southeast.insforge.app)
+#   PUBLIC_INSFORGE_ANON_KEY   (npx -y @insforge/cli secrets get ANON_KEY)

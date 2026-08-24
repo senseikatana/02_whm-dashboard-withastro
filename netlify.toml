@@ -1,0 +1,19 @@
+[build]
+  command = "bun install && bun run build"
+  publish = "dist"
+
+[build.environment]
+  # Con el adapter de Netlify el build genera dist/ + funciones serverless.
+  # Para un despliegue 100% estático, quitar esta línea.
+  ASTRO_ADAPTER = "netlify"
+
+# Variables de entorno requeridas en el build (Panel de Netlify > Site settings > Environment variables):
+#   PUBLIC_INSFORGE_URL        (https://TUKEY.ap-southeast.insforge.app)
+#   PUBLIC_INSFORGE_ANON_KEY   (npx -y @insforge/cli secrets get ANON_KEY)
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "SAMEORIGIN"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
