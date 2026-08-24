@@ -2,9 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import type { CollectionsState } from './useCollections';
 import { useToast } from '../components/dashboard/Toast';
 import { useI18n } from '../i18n/LocaleProvider';
-import { parseSpreadsheet } from '../lib/excel';
-import { kittHealth, kittStream, type KittFile, type KittMessage } from '../lib/kit';
-import { listKittFiles, removeKittFile, saveKittFile } from '../lib/kittFiles';
+import { kittHealth, kittStream, type KittMessage } from '../lib/kit';
 import { cancelSpeech, LOCALE_TO_LANG, primeVoices, speak, startRecognition, ttsSupported, voiceSupported } from '../lib/voice';
 import { buildWarehouseSnapshot } from '../lib/warehouse';
 
@@ -32,7 +30,6 @@ export function useKitt(collections: CollectionsState) {
 	const [speaking, setSpeaking] = useState(false);
 	const [muted, setMuted] = useState(() => localStorage.getItem(MUTE_KEY) === '1');
 	const [model, setModel] = useState<KittModelStatus | null>(null);
-	const [files, setFiles] = useState<KittFile[]>([]);
 
 	const stopRecognition = useRef<(() => void) | null>(null);
 	const finalTranscript = useRef('');
@@ -43,11 +40,6 @@ export function useKitt(collections: CollectionsState) {
 		void kittHealth().then((health) => {
 			if (!cancelled) setModel(health);
 		});
-		void listKittFiles()
-			.then((loaded) => {
-				if (!cancelled) setFiles(loaded);
-			})
-			.catch(() => {});
 		return () => {
 			cancelled = true;
 			stopRecognition.current?.();
@@ -91,7 +83,7 @@ export function useKitt(collections: CollectionsState) {
 				const snapshot = buildWarehouseSnapshot(collections);
 				let full = '';
 
-				for await (const delta of kittStream(history, { snapshot, files })) {
+				for await (const delta of kittStream(history, { snapshot })) {
 					full += delta;
 					appendAssistant(delta);
 				}
@@ -109,7 +101,7 @@ export function useKitt(collections: CollectionsState) {
 				setBusy(false);
 			}
 		},
-		[busy, collections, files, messages, muted, S, locale, toast],
+		[busy, collections, messages, muted, S, locale, toast],
 	);
 
 	const toggleListen = () => {
@@ -143,30 +135,6 @@ export function useKitt(collections: CollectionsState) {
 
 	const toggleMute = () => setMuted((value) => !value);
 
-	const handleFile = async (file: File) => {
-		if (!/\.(xlsx|xls|csv)$/i.test(file.name)) {
-			toast(S.kittFileInvalid, 'error');
-			return;
-		}
-		try {
-			const parsed = await parseSpreadsheet(file);
-			if (parsed.rowCount === 0) {
-				toast(S.kittFileEmpty, 'error');
-				return;
-			}
-			const saved = await saveKittFile(parsed);
-			setFiles((prev) => [...prev, saved]);
-			toast(S.kittFileLoaded(saved.name, saved.rowCount), 'success');
-		} catch {
-			toast(S.kittFileInvalid, 'error');
-		}
-	};
-
-	const handleRemoveFile = async (id: string) => {
-		await removeKittFile(id);
-		setFiles((prev) => prev.filter((file) => file.id !== id));
-	};
-
 	return {
 		messages,
 		input,
@@ -176,11 +144,8 @@ export function useKitt(collections: CollectionsState) {
 		speaking,
 		muted,
 		model,
-		files,
 		send,
 		toggleListen,
 		toggleMute,
-		handleFile,
-		handleRemoveFile,
 	};
 }

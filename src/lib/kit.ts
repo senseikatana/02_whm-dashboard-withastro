@@ -5,14 +5,6 @@ export interface KittMessage {
 	text: string;
 }
 
-export interface KittFile {
-	id: string;
-	name: string;
-	rowCount: number;
-	columns: string[];
-	rows: Record<string, unknown>[];
-}
-
 export interface KittHealth {
 	configured: boolean;
 	provider: 'openrouter' | 'ollama';
@@ -39,7 +31,7 @@ export async function kittHealth(): Promise<KittHealth | null> {
 
 export async function* kittStream(
 	messages: KittMessage[],
-	context: { snapshot: unknown; files: KittFile[] },
+	context: { snapshot: unknown },
 ): AsyncGenerator<string> {
 	const token = await getSessionToken();
 	const headers: Record<string, string> = { 'Content-Type': 'application/json' };
@@ -50,11 +42,6 @@ export async function* kittStream(
 		body: JSON.stringify({
 			messages,
 			snapshot: context.snapshot,
-			files: context.files.map((file) => ({
-				name: file.name,
-				rowCount: file.rowCount,
-				rows: file.rows,
-			})),
 		}),
 	});
 

@@ -1,5 +1,5 @@
 import { idbDelete, idbGet, idbKeys, idbSet } from './idb';
-import type { SpreadsheetData } from './excel';
+import type { SpreadsheetData } from './csv';
 
 const FILES_STORE = 'kitt-files';
 

@@ -1,12 +1,9 @@
-import { useEffect, useRef, useState, type KeyboardEvent, type ChangeEvent } from 'react';
+import { useEffect, useRef, useState, type KeyboardEvent } from 'react';
 import {
 	Bot,
-	FileSpreadsheet,
 	Loader2,
-	MessageSquare,
 	Mic,
 	MicOff,
-	Paperclip,
 	Send,
 	Volume2,
 	VolumeX,
@@ -38,7 +35,6 @@ export function KittPanel({ collections }: { collections: CollectionsState }) {
 	const { S } = useI18n();
 	const kitt = useKitt(collections);
 	const [open, setOpen] = useState(false);
-	const fileInput = useRef<HTMLInputElement>(null);
 	const scrollRef = useRef<HTMLDivElement>(null);
 
 	useEffect(() => {
@@ -51,12 +47,6 @@ export function KittPanel({ collections }: { collections: CollectionsState }) {
 			event.preventDefault();
 			void kitt.send(kitt.input);
 		}
-	};
-
-	const onFileChange = (event: ChangeEvent<HTMLInputElement>) => {
-		const file = event.target.files?.[0];
-		if (file) void kitt.handleFile(file);
-		event.target.value = '';
 	};
 
 	const toggleOpen = () => {
@@ -96,28 +86,6 @@ export function KittPanel({ collections }: { collections: CollectionsState }) {
 							</button>
 						</div>
 					</div>
-
-					{kitt.files.length > 0 && (
-						<div className="flex items-center gap-1.5 overflow-x-auto border-b border-gray-200 bg-slate-50 px-3 py-2 dark:border-slate-800 dark:bg-slate-950/60">
-							{kitt.files.map((file) => (
-								<span
-									key={file.id}
-									className="flex shrink-0 items-center gap-1 rounded-full bg-indigo-100 px-2.5 py-1 text-[11px] font-medium text-indigo-800 dark:bg-indigo-500/15 dark:text-indigo-300"
-								>
-									<FileSpreadsheet size={12} />
-									{file.name} · {file.rowCount}
-									<button
-										type="button"
-										onClick={() => void kitt.handleRemoveFile(file.id)}
-										aria-label={S.removeFile(file.name)}
-										className="ml-0.5 text-indigo-400 hover:text-indigo-900 dark:hover:text-indigo-100"
-									>
-										<X size={12} />
-									</button>
-								</span>
-							))}
-						</div>
-					)}
 
 					<div
 						ref={scrollRef}
@@ -161,22 +129,6 @@ export function KittPanel({ collections }: { collections: CollectionsState }) {
 						}}
 						className="flex items-end gap-2 border-t border-gray-200 bg-white p-3 dark:border-slate-800 dark:bg-slate-900"
 					>
-						<input
-							ref={fileInput}
-							type="file"
-							accept=".xlsx,.xls,.csv"
-							className="hidden"
-							onChange={onFileChange}
-						/>
-						<button
-							type="button"
-							onClick={() => fileInput.current?.click()}
-							aria-label={S.kittAttach}
-							title={S.kittAttach}
-							className="rounded-lg p-2.5 text-gray-500 transition hover:bg-gray-100 hover:text-indigo-600 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-indigo-300"
-						>
-							<Paperclip size={16} />
-						</button>
 						<textarea
 							value={kitt.input}
 							onChange={(event) => kitt.setInput(event.target.value)}
@@ -209,15 +161,6 @@ export function KittPanel({ collections }: { collections: CollectionsState }) {
 					</form>
 				</div>
 			)}
-
-			<button
-				type="button"
-				onClick={toggleOpen}
-				aria-label={S.kittTitle}
-				className="flex h-14 w-14 items-center justify-center rounded-full bg-indigo-600 text-white shadow-xl transition hover:bg-indigo-700"
-			>
-				<MessageSquare size={24} />
-			</button>
 		</div>
 	);
 }

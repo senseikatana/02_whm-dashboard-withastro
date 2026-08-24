@@ -1,8 +1,9 @@
 import type { CollectionKey, Doc } from '../types';
+import { createInsForgeStore } from './insforgeStore';
 import { createLocalStore } from './localStore';
 
 export interface AppStore {
-	readonly kind: 'local';
+	readonly kind: 'local' | 'remote';
 	subscribeCollection(
 		col: CollectionKey,
 		cb: (docs: Doc[], error?: string) => void,
@@ -18,7 +19,9 @@ let store: AppStore | null = null;
 
 export function getStore(): AppStore {
 	if (!store) {
-		store = createLocalStore();
+		const url = import.meta.env.PUBLIC_INSFORGE_URL;
+		const anonKey = import.meta.env.PUBLIC_INSFORGE_ANON_KEY;
+		store = url && anonKey ? createInsForgeStore() : createLocalStore();
 	}
 	return store;
 }
