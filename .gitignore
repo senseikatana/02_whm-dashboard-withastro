@@ -52,3 +52,6 @@ skills-lock.json
 scripts/
 CLAUDE.md
 
+
+# Base de datos local del server de mensajeria
+server/data/

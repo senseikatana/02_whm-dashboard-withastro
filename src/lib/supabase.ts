@@ -2,21 +2,6 @@ import { createClient, type SupabaseClient, type User } from '@supabase/supabase
 
 const SUPABASE_URL: string | undefined = import.meta.env.PUBLIC_SUPABASE_URL;
 const SUPABASE_ANON_KEY: string | undefined = import.meta.env.PUBLIC_SUPABASE_ANON_KEY;
-<<<<<<< HEAD
-=======
-const SUPABASE_SECRET_KEY: string | undefined = process.env.SUPABASE_SECRET_KEY;
-
-
-
-
-const supabase = createClient(url, secretKey, {
-	auth: { persistSession: false, autoRefreshToken: false },
-});
-
-
-
-
->>>>>>> 9c82306 (chore: initialize, again repository)
 
 let client: SupabaseClient | null = null;
 if (typeof window !== 'undefined' && SUPABASE_URL && SUPABASE_ANON_KEY) {
