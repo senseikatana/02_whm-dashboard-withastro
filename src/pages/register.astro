@@ -1,0 +1,8 @@
+---
+import Layout from '../layouts/Layout.astro';
+import AuthPage from '../components/dashboard/AuthPage';
+---
+
+<Layout>
+	<AuthPage client:only="react" mode="register" />
+</Layout>
